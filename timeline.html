@@ -1,0 +1,1603 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Timeline Annuelle</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #f0f2f5;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: #1e293b;
+}
+
+/* ── Toolbar ── */
+.toolbar {
+  background: #1e293b;
+  color: white;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.toolbar h1 { font-size: 16px; font-weight: 700; letter-spacing: 0.5px; flex: 1; }
+.toolbar .year-nav { display: flex; align-items: center; gap: 8px; }
+.toolbar .year-nav button {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: white;
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.toolbar .year-nav button:hover { background: rgba(255,255,255,0.25); }
+.toolbar .year-display { font-size: 20px; font-weight: 700; min-width: 60px; text-align: center; }
+.toolbar .zoom-controls { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.toolbar .zoom-controls button {
+  background: rgba(255,255,255,0.15);
+  border: none; color: white;
+  width: 28px; height: 28px;
+  border-radius: 6px; cursor: pointer;
+  font-size: 14px; font-weight: bold;
+  transition: background 0.15s;
+}
+.toolbar .zoom-controls button:hover { background: rgba(255,255,255,0.25); }
+.btn-add-stream {
+  background: #3b82f6;
+  border: none; color: white;
+  padding: 6px 14px;
+  border-radius: 6px; cursor: pointer;
+  font-size: 13px; font-weight: 600;
+  transition: background 0.15s;
+}
+.btn-add-stream:hover { background: #2563eb; }
+.btn-export {
+  background: rgba(255,255,255,0.15);
+  border: none; color: white;
+  padding: 6px 14px;
+  border-radius: 6px; cursor: pointer;
+  font-size: 13px;
+  transition: background 0.15s;
+}
+.btn-export:hover { background: rgba(255,255,255,0.25); }
+
+/* ── Main layout ── */
+.main {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+}
+
+/* ── Timeline wrapper (scrollable) ── */
+.timeline-wrapper {
+  min-width: 100%;
+  display: inline-block;
+  vertical-align: top;
+}
+
+/* ── Header row ── */
+.header-row {
+  display: flex;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: #f0f2f5;
+}
+.header-sidebar {
+  width: 200px;
+  min-width: 200px;
+  flex-shrink: 0;
+  position: sticky;
+  left: 0;
+  z-index: 60;
+  background: #1e293b;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  color: rgba(255,255,255,0.6);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border-right: 1px solid rgba(255,255,255,0.1);
+}
+.months-header {
+  display: flex;
+  background: #1e293b;
+  border-bottom: 2px solid #334155;
+}
+.month-cell {
+  text-align: center;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 0;
+  border-right: 1px solid rgba(255,255,255,0.1);
+  letter-spacing: 0.3px;
+  position: relative;
+}
+.month-cell::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: transparent;
+}
+
+/* ── Stream rows ── */
+.stream-rows {
+  /* rows stacked */
+}
+.stream-row {
+  display: flex;
+  border-bottom: 1px solid #e2e8f0;
+  transition: background 0.1s;
+}
+.stream-row:hover .stream-track {
+  background: rgba(0,0,0,0.015);
+}
+
+/* ── Stream sidebar cell ── */
+.stream-sidebar {
+  width: 200px;
+  min-width: 200px;
+  flex-shrink: 0;
+  position: sticky;
+  left: 0;
+  z-index: 30;
+  background: white;
+  border-right: 2px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  gap: 8px;
+  cursor: default;
+  box-shadow: 2px 0 6px rgba(0,0,0,0.06);
+}
+.stream-color-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.stream-icon { font-size: 16px; flex-shrink: 0; }
+.stream-name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.stream-actions {
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.stream-sidebar:hover .stream-actions { opacity: 1; }
+.stream-actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 3px 5px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #64748b;
+  transition: background 0.1s, color 0.1s;
+}
+.stream-actions button:hover { background: #f1f5f9; color: #1e293b; }
+.stream-actions button.del:hover { background: #fee2e2; color: #dc2626; }
+
+/* ── Stream track (timeline area) ── */
+.stream-track {
+  flex: 1;
+  position: relative;
+  height: 64px;
+  overflow: visible;
+}
+.stream-track-inner {
+  position: relative;
+  height: 100%;
+}
+
+/* ── Month grid lines on track ── */
+.month-line {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 1px;
+  background: #e2e8f0;
+  pointer-events: none;
+}
+.month-line.weekend {
+  background: #f1f5f9;
+}
+
+/* ── Today marker ── */
+.today-marker {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 2px;
+  background: #ef4444;
+  z-index: 10;
+  pointer-events: none;
+}
+.today-marker::before {
+  content: 'Aujourd\'hui';
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  color: #ef4444;
+  font-weight: 700;
+  white-space: nowrap;
+  background: white;
+  padding: 1px 4px;
+  border-radius: 3px;
+  border: 1px solid #fca5a5;
+}
+
+/* ── Event block ── */
+.event-block {
+  position: absolute;
+  height: 40px;
+  top: 12px;
+  border-radius: 8px;
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  gap: 5px;
+  user-select: none;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  transition: box-shadow 0.1s, transform 0.05s;
+  z-index: 5;
+  min-width: 24px;
+  white-space: nowrap;
+}
+.event-block:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  z-index: 10;
+}
+.event-block.dragging {
+  cursor: grabbing;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  opacity: 0.9;
+  z-index: 100;
+  transform: scale(1.02);
+}
+.event-block.resizing { cursor: ew-resize; }
+.event-icon { font-size: 14px; flex-shrink: 0; }
+.event-title {
+  font-size: 12px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.resize-handle {
+  position: absolute;
+  right: 0; top: 0; bottom: 0;
+  width: 8px;
+  cursor: ew-resize;
+  background: rgba(0,0,0,0.1);
+  border-radius: 0 8px 8px 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 2;
+}
+.event-block:hover .resize-handle { opacity: 1; }
+
+/* ── Add stream row ── */
+.add-stream-row {
+  display: flex;
+  padding: 8px;
+  background: white;
+  border-top: 2px dashed #e2e8f0;
+  position: sticky;
+  left: 0;
+  width: 200px;
+}
+.add-stream-row button {
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #64748b;
+  font-size: 13px;
+  padding: 6px;
+  border-radius: 6px;
+  transition: background 0.1s, color 0.1s;
+  text-align: left;
+}
+.add-stream-row button:hover { background: #f1f5f9; color: #1e293b; }
+
+/* ── Tooltip ── */
+.tooltip {
+  position: fixed;
+  background: #1e293b;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  pointer-events: none;
+  z-index: 1000;
+  display: none;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  max-width: 200px;
+}
+.tooltip-title { font-weight: 700; margin-bottom: 3px; }
+.tooltip-dates { color: #94a3b8; font-size: 11px; }
+.tooltip-stream { color: #60a5fa; font-size: 11px; margin-top: 2px; }
+
+/* ── Context menu ── */
+.ctx-menu {
+  position: fixed;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05);
+  z-index: 2000;
+  display: none;
+  overflow: hidden;
+  min-width: 150px;
+}
+.ctx-item {
+  padding: 9px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.1s;
+}
+.ctx-item:hover { background: #f1f5f9; }
+.ctx-item.danger { color: #dc2626; }
+.ctx-item.danger:hover { background: #fee2e2; }
+.ctx-separator { height: 1px; background: #e2e8f0; margin: 4px 0; }
+
+/* ── Modal ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 500;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(2px);
+}
+.modal-overlay.active { display: flex; }
+.modal {
+  background: white;
+  border-radius: 16px;
+  width: 500px;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.modal-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.modal-header h2 { font-size: 18px; font-weight: 700; }
+.modal-close {
+  background: none; border: none;
+  cursor: pointer; font-size: 20px;
+  color: #94a3b8; padding: 2px 6px;
+  border-radius: 6px; line-height: 1;
+  transition: background 0.1s, color 0.1s;
+}
+.modal-close:hover { background: #f1f5f9; color: #1e293b; }
+.modal-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
+.modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* ── Form elements ── */
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-label { font-size: 13px; font-weight: 600; color: #374151; }
+.form-input {
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
+  width: 100%;
+  font-family: inherit;
+}
+.form-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+.form-row { display: flex; gap: 12px; }
+.form-row .form-group { flex: 1; }
+
+/* ── Icon picker ── */
+.icon-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 4px;
+  max-height: 160px;
+  overflow-y: auto;
+  padding: 8px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1.5px solid #d1d5db;
+}
+.icon-btn {
+  width: 36px; height: 36px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.1s, border-color 0.1s, transform 0.1s;
+}
+.icon-btn:hover { background: #e2e8f0; transform: scale(1.15); }
+.icon-btn.selected { border-color: #3b82f6; background: #eff6ff; }
+
+/* ── Color picker ── */
+.color-picker-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1.5px solid #d1d5db;
+  align-items: center;
+}
+.color-swatch {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 3px solid transparent;
+  transition: transform 0.1s, border-color 0.1s;
+  flex-shrink: 0;
+}
+.color-swatch:hover { transform: scale(1.2); }
+.color-swatch.selected { border-color: #1e293b; }
+.color-custom-input {
+  border: 1.5px solid #d1d5db;
+  border-radius: 6px;
+  padding: 2px;
+  width: 36px; height: 30px;
+  cursor: pointer;
+}
+
+/* ── Buttons ── */
+.btn {
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.15s, opacity 0.15s;
+  font-family: inherit;
+}
+.btn-primary { background: #3b82f6; color: white; }
+.btn-primary:hover { background: #2563eb; }
+.btn-secondary { background: #f1f5f9; color: #374151; }
+.btn-secondary:hover { background: #e2e8f0; }
+.btn-danger { background: #fee2e2; color: #dc2626; }
+.btn-danger:hover { background: #fecaca; }
+
+/* ── Drag ghost stream highlight ── */
+.stream-track.drag-target { background: rgba(59,130,246,0.08); }
+
+/* ── Scrollbar ── */
+.main::-webkit-scrollbar { width: 8px; height: 8px; }
+.main::-webkit-scrollbar-track { background: #f0f2f5; }
+.main::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+.main::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ── Empty state ── */
+.empty-hint {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: #94a3b8;
+  font-size: 12px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* ── Drag date indicator ── */
+.drag-indicator {
+  position: fixed;
+  background: #1e293b;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+  pointer-events: none;
+  z-index: 2000;
+  display: none;
+  white-space: nowrap;
+}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <h1>📅 Timeline Annuelle</h1>
+  <div class="year-nav">
+    <button onclick="changeYear(-1)" title="Année précédente">‹</button>
+    <span class="year-display" id="year-display">2026</span>
+    <button onclick="changeYear(1)" title="Année suivante">›</button>
+  </div>
+  <div class="zoom-controls">
+    <span style="opacity:0.6">Zoom:</span>
+    <button onclick="zoom(-1)" title="Réduire">−</button>
+    <button onclick="zoom(1)" title="Agrandir">+</button>
+    <button onclick="resetZoom()" title="Réinitialiser" style="font-size:11px;width:auto;padding:0 8px;">Auto</button>
+  </div>
+  <button class="btn-add-stream" onclick="openStreamModal()">+ Stream</button>
+  <button class="btn-export" onclick="exportPNG()">📷 Export</button>
+</div>
+
+<div class="main" id="main-scroll">
+  <div class="timeline-wrapper" id="timeline-wrapper">
+    <!-- dynamically rendered -->
+  </div>
+</div>
+
+<!-- Tooltip -->
+<div class="tooltip" id="tooltip">
+  <div class="tooltip-title" id="tooltip-title"></div>
+  <div class="tooltip-dates" id="tooltip-dates"></div>
+  <div class="tooltip-stream" id="tooltip-stream"></div>
+</div>
+
+<!-- Drag date indicator -->
+<div class="drag-indicator" id="drag-indicator"></div>
+
+<!-- Context menu -->
+<div class="ctx-menu" id="ctx-menu">
+  <div class="ctx-item" onclick="ctxEdit()">✏️ Modifier</div>
+  <div class="ctx-item" onclick="ctxDuplicate()">📋 Dupliquer</div>
+  <div class="ctx-separator"></div>
+  <div class="ctx-item danger" onclick="ctxDelete()">🗑️ Supprimer</div>
+</div>
+
+<!-- Event Modal -->
+<div class="modal-overlay" id="event-modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="event-modal-title">Ajouter un événement</h2>
+      <button class="modal-close" onclick="closeEventModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Titre</label>
+        <input type="text" class="form-input" id="ev-title" placeholder="Nom de l'événement..." />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Date de début</label>
+          <input type="date" class="form-input" id="ev-start" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date de fin</label>
+          <input type="date" class="form-input" id="ev-end" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Stream</label>
+        <select class="form-input" id="ev-stream"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Icône</label>
+        <div class="icon-picker-grid" id="ev-icon-grid"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Couleur (optionnel — utilise la couleur du stream par défaut)</label>
+        <div class="color-picker-row" id="ev-color-picker">
+          <div class="color-swatch" data-color="" style="background: linear-gradient(135deg, #fff 45%, #ccc 45%); border: 2px solid #d1d5db;" title="Couleur du stream"></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Note (optionnel)</label>
+        <textarea class="form-input" id="ev-note" rows="2" placeholder="Description ou note..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeEventModal()">Annuler</button>
+      <button class="btn btn-danger" id="ev-delete-btn" onclick="deleteEventFromModal()" style="margin-right:auto;display:none;">Supprimer</button>
+      <button class="btn btn-primary" onclick="saveEventModal()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Stream Modal -->
+<div class="modal-overlay" id="stream-modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="stream-modal-title">Nouveau stream</h2>
+      <button class="modal-close" onclick="closeStreamModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Nom du stream</label>
+        <input type="text" class="form-input" id="st-name" placeholder="Ex: Réunions, Salons, Campagnes..." />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Icône du stream</label>
+        <div class="icon-picker-grid" id="st-icon-grid"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Couleur par défaut des événements</label>
+        <div class="color-picker-row" id="st-color-picker"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Hauteur de la ligne</label>
+        <select class="form-input" id="st-height">
+          <option value="48">Compacte (48px)</option>
+          <option value="64" selected>Normale (64px)</option>
+          <option value="80">Grande (80px)</option>
+          <option value="100">Extra-large (100px)</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeStreamModal()">Annuler</button>
+      <button class="btn btn-danger" id="st-delete-btn" onclick="deleteStreamFromModal()" style="margin-right:auto;display:none;">Supprimer le stream</button>
+      <button class="btn btn-primary" onclick="saveStreamModal()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════
+
+const ICONS = [
+  '🎉','🎊','📅','📆','🗓️','🏪','🏢','👥','📊','🎯',
+  '🚀','✈️','🌍','💼','📋','🎤','🎪','🏆','⭐','🔔',
+  '📣','💡','🎓','🏋️','🍽️','☕','🎸','🎨','📸','🎬',
+  '🛒','🔧','💻','📱','🌐','🗣️','🤝','📝','✅','🎭',
+  '🏅','🌟','💫','🔥','🎈','🎀','🌈','❄️','🏖️','🎁',
+  '🔑','🏠','🚗','⚽','🎮','📚','🔬','🌻','🦁','🐬',
+];
+
+const PRESET_COLORS = [
+  '#ef4444','#f97316','#f59e0b','#eab308',
+  '#84cc16','#10b981','#06b6d4','#3b82f6',
+  '#8b5cf6','#ec4899','#64748b','#1e293b',
+];
+
+const MONTHS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin',
+                   'Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+const MONTHS_SHORT = ['Jan','Fév','Mar','Avr','Mai','Jun',
+                      'Jul','Aoû','Sep','Oct','Nov','Déc'];
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+
+let state = {
+  year: new Date().getFullYear(),
+  dayWidth: 0, // 0 = auto
+  streams: [],
+  events: [],
+  _nextId: 1,
+};
+
+function genId() { return 'id_' + (state._nextId++); }
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem('timeline_state_v2');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      state = { ...state, ...parsed };
+    }
+  } catch(e) {}
+}
+
+function saveState() {
+  try {
+    localStorage.setItem('timeline_state_v2', JSON.stringify(state));
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════
+// DATE UTILITIES
+// ═══════════════════════════════════════════════
+
+function isLeapYear(y) {
+  return (y % 4 === 0 && y % 100 !== 0) || (y % 400 === 0);
+}
+
+function daysInYear(y) {
+  return isLeapYear(y) ? 366 : 365;
+}
+
+function daysInMonth(year, month) { // month: 0-11
+  return new Date(year, month + 1, 0).getDate();
+}
+
+// Returns 0-based day index within the year
+function dayOfYear(dateStr, year) {
+  const d = new Date(dateStr + 'T00:00:00');
+  const start = new Date(year, 0, 1);
+  const diff = d - start;
+  return Math.round(diff / 86400000);
+}
+
+function dateStrFromDayOfYear(dayIdx, year) {
+  const d = new Date(year, 0, 1);
+  d.setDate(d.getDate() + dayIdx);
+  return d.toISOString().slice(0, 10);
+}
+
+function formatDate(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function formatDateShort(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+}
+
+function clampDate(dateStr, year) {
+  const min = `${year}-01-01`;
+  const max = `${year}-12-31`;
+  if (dateStr < min) return min;
+  if (dateStr > max) return max;
+  return dateStr;
+}
+
+function todayDayOfYear(year) {
+  const today = new Date();
+  if (today.getFullYear() !== year) return -1;
+  return dayOfYear(today.toISOString().slice(0,10), year);
+}
+
+// ═══════════════════════════════════════════════
+// COMPUTED
+// ═══════════════════════════════════════════════
+
+function getEffectiveDayWidth() {
+  if (state.dayWidth > 0) return state.dayWidth;
+  // Auto: fit year in available width
+  const mainEl = document.getElementById('main-scroll');
+  const available = (mainEl ? mainEl.clientWidth : window.innerWidth) - 200 - 16;
+  return Math.max(4, Math.floor(available / daysInYear(state.year)));
+}
+
+function dayToX(dayIdx) {
+  return dayIdx * getEffectiveDayWidth();
+}
+
+function xToDay(x) {
+  return Math.round(x / getEffectiveDayWidth());
+}
+
+function totalWidth() {
+  return daysInYear(state.year) * getEffectiveDayWidth();
+}
+
+// ═══════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════
+
+function render() {
+  document.getElementById('year-display').textContent = state.year;
+  const wrapper = document.getElementById('timeline-wrapper');
+  const dw = getEffectiveDayWidth();
+  const tw = totalWidth();
+  const days = daysInYear(state.year);
+
+  let html = '';
+
+  // ── Header row ──
+  html += `<div class="header-row">`;
+  html += `<div class="header-sidebar">STREAMS</div>`;
+  html += `<div class="months-header" style="width:${tw}px">`;
+
+  let dayOffset = 0;
+  for (let m = 0; m < 12; m++) {
+    const mDays = daysInMonth(state.year, m);
+    const mWidth = mDays * dw;
+    const label = dw >= 6 ? MONTHS_FR[m] : (dw >= 3 ? MONTHS_SHORT[m] : '');
+    html += `<div class="month-cell" style="width:${mWidth}px;flex-shrink:0;" title="${MONTHS_FR[m]}">
+      ${label}
+    </div>`;
+    dayOffset += mDays;
+  }
+  html += `</div></div>`; // months-header, header-row
+
+  // ── Stream rows ──
+  html += `<div class="stream-rows">`;
+
+  if (state.streams.length === 0) {
+    html += `<div style="padding:40px;text-align:center;color:#94a3b8;font-size:14px;">
+      Aucun stream. Cliquez sur <strong>+ Stream</strong> pour commencer.
+    </div>`;
+  }
+
+  for (const stream of state.streams) {
+    const streamHeight = stream.height || 64;
+    const streamEvents = state.events.filter(e => e.streamId === stream.id);
+
+    html += `<div class="stream-row" data-stream-id="${stream.id}" style="min-height:${streamHeight}px">`;
+
+    // Sidebar
+    html += `<div class="stream-sidebar" style="min-height:${streamHeight}px">
+      <div class="stream-color-dot" style="background:${stream.color}"></div>
+      <span class="stream-icon">${stream.icon || '📋'}</span>
+      <span class="stream-name" title="${esc(stream.name)}">${esc(stream.name)}</span>
+      <div class="stream-actions">
+        <button onclick="openStreamModal('${stream.id}')" title="Modifier">✏️</button>
+        <button class="del" onclick="confirmDeleteStream('${stream.id}')" title="Supprimer">🗑️</button>
+      </div>
+    </div>`;
+
+    // Track
+    html += `<div class="stream-track" id="track-${stream.id}" data-stream-id="${stream.id}" style="width:${tw}px;min-height:${streamHeight}px"
+      ondblclick="trackDblClick(event, '${stream.id}')">`;
+    html += `<div class="stream-track-inner" style="height:${streamHeight}px">`;
+
+    // Month grid lines
+    let dx = 0;
+    for (let m = 0; m < 12; m++) {
+      const mDays = daysInMonth(state.year, m);
+      html += `<div class="month-line" style="left:${dx * dw}px"></div>`;
+      dx += mDays;
+    }
+
+    // Today marker (only in first stream to avoid duplication, we'll do it via JS)
+    const todayDay = todayDayOfYear(state.year);
+    if (todayDay >= 0) {
+      html += `<div class="today-marker" style="left:${dayToX(todayDay)}px"></div>`;
+    }
+
+    // Events
+    if (streamEvents.length === 0) {
+      html += `<div class="empty-hint">Double-cliquer pour ajouter</div>`;
+    }
+
+    for (const ev of streamEvents) {
+      const startDay = dayOfYear(ev.startDate, state.year);
+      const endDay = dayOfYear(ev.endDate, state.year);
+      if (endDay < 0 || startDay >= days) continue;
+      const cStartDay = Math.max(0, startDay);
+      const cEndDay = Math.min(days - 1, endDay);
+      const leftPx = dayToX(cStartDay);
+      const widthPx = Math.max(dw, (cEndDay - cStartDay + 1) * dw);
+      const evColor = ev.color || stream.color;
+      const textColor = luminance(evColor) > 0.4 ? '#1e293b' : '#ffffff';
+      const showTitle = widthPx > 40;
+      const showIcon = widthPx > 20;
+
+      html += `<div class="event-block"
+        data-event-id="${ev.id}"
+        style="left:${leftPx}px;width:${widthPx}px;background:${evColor};color:${textColor};"
+        onmousedown="startEventDrag(event, '${ev.id}')"
+        oncontextmenu="openContextMenu(event, '${ev.id}')"
+        ondblclick="openEventModal('${ev.id}');event.stopPropagation();"
+        onmouseenter="showTooltip(event, '${ev.id}')"
+        onmouseleave="hideTooltip()">
+        ${showIcon ? `<span class="event-icon">${ev.icon || '📌'}</span>` : ''}
+        ${showTitle ? `<span class="event-title">${esc(ev.title)}</span>` : ''}
+        <div class="resize-handle" onmousedown="startEventResize(event, '${ev.id}')"></div>
+      </div>`;
+    }
+
+    html += `</div></div>`; // track-inner, stream-track
+    html += `</div>`; // stream-row
+  }
+
+  // Add stream button row
+  if (state.streams.length > 0) {
+    html += `<div style="display:flex;">
+      <div class="add-stream-row">
+        <button onclick="openStreamModal()">＋ Ajouter un stream</button>
+      </div>
+    </div>`;
+  }
+
+  html += `</div>`; // stream-rows
+  wrapper.innerHTML = html;
+}
+
+function esc(str) {
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+function luminance(hex) {
+  hex = hex.replace('#','');
+  if (hex.length === 3) hex = hex.split('').map(c=>c+c).join('');
+  const r = parseInt(hex.slice(0,2),16)/255;
+  const g = parseInt(hex.slice(2,4),16)/255;
+  const b = parseInt(hex.slice(4,6),16)/255;
+  const toLinear = c => c <= 0.04045 ? c/12.92 : Math.pow((c+0.055)/1.055, 2.4);
+  return 0.2126*toLinear(r) + 0.7152*toLinear(g) + 0.0722*toLinear(b);
+}
+
+// ═══════════════════════════════════════════════
+// ZOOM & YEAR
+// ═══════════════════════════════════════════════
+
+function zoom(dir) {
+  const current = getEffectiveDayWidth();
+  const steps = [2,3,4,6,8,10,12,16,20,24,30,40,50,60,80,100];
+  const idx = steps.findIndex(s => s >= current);
+  let newIdx = (idx === -1) ? steps.length - 1 : idx + dir;
+  newIdx = Math.max(0, Math.min(steps.length - 1, newIdx));
+  state.dayWidth = steps[newIdx];
+  saveState();
+  render();
+}
+
+function resetZoom() {
+  state.dayWidth = 0;
+  saveState();
+  render();
+}
+
+function changeYear(dir) {
+  state.year += dir;
+  saveState();
+  render();
+}
+
+// ═══════════════════════════════════════════════
+// TOOLTIP
+// ═══════════════════════════════════════════════
+
+function showTooltip(e, eventId) {
+  const ev = state.events.find(x => x.id === eventId);
+  if (!ev) return;
+  const stream = state.streams.find(s => s.id === ev.streamId);
+  const tooltip = document.getElementById('tooltip');
+  document.getElementById('tooltip-title').textContent = (ev.icon || '') + ' ' + ev.title;
+  document.getElementById('tooltip-dates').textContent = formatDateShort(ev.startDate) + ' → ' + formatDateShort(ev.endDate);
+  document.getElementById('tooltip-stream').textContent = stream ? (stream.icon + ' ' + stream.name) : '';
+  tooltip.style.display = 'block';
+  positionTooltip(e);
+}
+
+function hideTooltip() {
+  document.getElementById('tooltip').style.display = 'none';
+}
+
+function positionTooltip(e) {
+  const tooltip = document.getElementById('tooltip');
+  const x = e.clientX + 14;
+  const y = e.clientY - 10;
+  tooltip.style.left = Math.min(x, window.innerWidth - 220) + 'px';
+  tooltip.style.top = Math.min(y, window.innerHeight - 100) + 'px';
+}
+
+document.addEventListener('mousemove', e => {
+  const tooltip = document.getElementById('tooltip');
+  if (tooltip.style.display === 'block') positionTooltip(e);
+});
+
+// ═══════════════════════════════════════════════
+// CONTEXT MENU
+// ═══════════════════════════════════════════════
+
+let ctxEventId = null;
+
+function openContextMenu(e, eventId) {
+  e.preventDefault();
+  e.stopPropagation();
+  hideTooltip();
+  ctxEventId = eventId;
+  const menu = document.getElementById('ctx-menu');
+  menu.style.display = 'block';
+  const x = Math.min(e.clientX, window.innerWidth - 160);
+  const y = Math.min(e.clientY, window.innerHeight - 120);
+  menu.style.left = x + 'px';
+  menu.style.top = y + 'px';
+}
+
+function closeContextMenu() {
+  document.getElementById('ctx-menu').style.display = 'none';
+  ctxEventId = null;
+}
+
+function ctxEdit() {
+  if (ctxEventId) openEventModal(ctxEventId);
+  closeContextMenu();
+}
+
+function ctxDuplicate() {
+  if (!ctxEventId) return;
+  const ev = state.events.find(e => e.id === ctxEventId);
+  if (!ev) return;
+  const start = new Date(ev.startDate + 'T00:00:00');
+  const end = new Date(ev.endDate + 'T00:00:00');
+  const dur = end - start;
+  start.setDate(start.getDate() + 1);
+  end.setTime(start.getTime() + dur);
+  state.events.push({
+    ...ev,
+    id: genId(),
+    title: ev.title + ' (copie)',
+    startDate: start.toISOString().slice(0,10),
+    endDate: end.toISOString().slice(0,10),
+  });
+  saveState();
+  render();
+  closeContextMenu();
+}
+
+function ctxDelete() {
+  if (!ctxEventId) return;
+  state.events = state.events.filter(e => e.id !== ctxEventId);
+  saveState();
+  render();
+  closeContextMenu();
+}
+
+document.addEventListener('click', () => closeContextMenu());
+
+// ═══════════════════════════════════════════════
+// DRAG & DROP — MOVE EVENT
+// ═══════════════════════════════════════════════
+
+let dragState = null;
+
+function startEventDrag(e, eventId) {
+  if (e.target.classList.contains('resize-handle')) return;
+  if (e.button !== 0) return;
+  e.stopPropagation();
+  e.preventDefault();
+
+  const ev = state.events.find(x => x.id === eventId);
+  if (!ev) return;
+
+  const dw = getEffectiveDayWidth();
+  const startDayIdx = dayOfYear(ev.startDate, state.year);
+  const endDayIdx = dayOfYear(ev.endDate, state.year);
+  const duration = endDayIdx - startDayIdx;
+
+  const trackEl = document.getElementById('track-' + ev.streamId);
+  const mainEl = document.getElementById('main-scroll');
+
+  dragState = {
+    type: 'move',
+    eventId,
+    origStartDay: startDayIdx,
+    origEndDay: endDayIdx,
+    duration,
+    origStreamId: ev.streamId,
+    mouseStartX: e.clientX,
+    mouseStartY: e.clientY,
+    scrollStartX: mainEl.scrollLeft,
+    scrollStartY: mainEl.scrollTop,
+    dw,
+  };
+
+  const eventEl = document.querySelector(`[data-event-id="${eventId}"]`);
+  if (eventEl) eventEl.classList.add('dragging');
+  document.body.style.cursor = 'grabbing';
+
+  const indicator = document.getElementById('drag-indicator');
+  indicator.style.display = 'block';
+}
+
+function startEventResize(e, eventId) {
+  e.stopPropagation();
+  e.preventDefault();
+
+  const ev = state.events.find(x => x.id === eventId);
+  if (!ev) return;
+
+  const dw = getEffectiveDayWidth();
+  const startDayIdx = dayOfYear(ev.startDate, state.year);
+  const endDayIdx = dayOfYear(ev.endDate, state.year);
+  const mainEl = document.getElementById('main-scroll');
+
+  dragState = {
+    type: 'resize',
+    eventId,
+    origStartDay: startDayIdx,
+    origEndDay: endDayIdx,
+    mouseStartX: e.clientX,
+    scrollStartX: mainEl.scrollLeft,
+    dw,
+  };
+
+  const eventEl = document.querySelector(`[data-event-id="${eventId}"]`);
+  if (eventEl) eventEl.classList.add('resizing');
+  document.body.style.cursor = 'ew-resize';
+
+  const indicator = document.getElementById('drag-indicator');
+  indicator.style.display = 'block';
+}
+
+document.addEventListener('mousemove', e => {
+  if (!dragState) return;
+  const mainEl = document.getElementById('main-scroll');
+  const dw = dragState.dw;
+  const days = daysInYear(state.year);
+
+  if (dragState.type === 'move') {
+    const deltaX = (e.clientX - dragState.mouseStartX) + (mainEl.scrollLeft - dragState.scrollStartX);
+    const deltaDays = Math.round(deltaX / dw);
+
+    let newStartDay = Math.max(0, Math.min(days - 1 - dragState.duration, dragState.origStartDay + deltaDays));
+    let newEndDay = newStartDay + dragState.duration;
+
+    // Update event visually
+    const eventEl = document.querySelector(`[data-event-id="${dragState.eventId}"]`);
+    if (eventEl) {
+      eventEl.style.left = (newStartDay * dw) + 'px';
+    }
+
+    // Detect stream change from Y position
+    const streamRowEls = document.querySelectorAll('.stream-row');
+    let targetStreamId = dragState.origStreamId;
+    for (const rowEl of streamRowEls) {
+      const rect = rowEl.getBoundingClientRect();
+      if (e.clientY >= rect.top && e.clientY <= rect.bottom) {
+        const sid = rowEl.dataset.streamId;
+        if (sid) { targetStreamId = sid; break; }
+      }
+    }
+    dragState.currentTargetStreamId = targetStreamId;
+
+    // Highlight target stream
+    document.querySelectorAll('.stream-track').forEach(t => t.classList.remove('drag-target'));
+    if (targetStreamId !== dragState.origStreamId) {
+      const targetTrack = document.getElementById('track-' + targetStreamId);
+      if (targetTrack) targetTrack.classList.add('drag-target');
+    }
+
+    // Indicator
+    const newStart = dateStrFromDayOfYear(newStartDay, state.year);
+    const newEnd = dateStrFromDayOfYear(newEndDay, state.year);
+    const indicator = document.getElementById('drag-indicator');
+    indicator.style.left = Math.min(e.clientX + 14, window.innerWidth - 220) + 'px';
+    indicator.style.top = (e.clientY - 30) + 'px';
+    indicator.textContent = formatDateShort(newStart) + ' → ' + formatDateShort(newEnd);
+
+    dragState.newStartDay = newStartDay;
+    dragState.newEndDay = newEndDay;
+
+  } else if (dragState.type === 'resize') {
+    const deltaX = (e.clientX - dragState.mouseStartX) + (mainEl.scrollLeft - dragState.scrollStartX);
+    const deltaDays = Math.round(deltaX / dw);
+    let newEndDay = Math.max(dragState.origStartDay, Math.min(days - 1, dragState.origEndDay + deltaDays));
+
+    const eventEl = document.querySelector(`[data-event-id="${dragState.eventId}"]`);
+    if (eventEl) {
+      const newWidth = Math.max(dw, (newEndDay - dragState.origStartDay + 1) * dw);
+      eventEl.style.width = newWidth + 'px';
+    }
+
+    const newEnd = dateStrFromDayOfYear(newEndDay, state.year);
+    const newStart = dateStrFromDayOfYear(dragState.origStartDay, state.year);
+    const indicator = document.getElementById('drag-indicator');
+    indicator.style.left = Math.min(e.clientX + 14, window.innerWidth - 220) + 'px';
+    indicator.style.top = (e.clientY - 30) + 'px';
+    indicator.textContent = formatDateShort(newStart) + ' → ' + formatDateShort(newEnd);
+
+    dragState.newEndDay = newEndDay;
+  }
+});
+
+document.addEventListener('mouseup', e => {
+  if (!dragState) return;
+  const days = daysInYear(state.year);
+
+  const ev = state.events.find(x => x.id === dragState.eventId);
+  if (ev) {
+    if (dragState.type === 'move' && dragState.newStartDay !== undefined) {
+      const newStartDay = Math.max(0, Math.min(days - 1 - dragState.duration, dragState.newStartDay));
+      const newEndDay = newStartDay + dragState.duration;
+      ev.startDate = dateStrFromDayOfYear(newStartDay, state.year);
+      ev.endDate = dateStrFromDayOfYear(newEndDay, state.year);
+      if (dragState.currentTargetStreamId) {
+        ev.streamId = dragState.currentTargetStreamId;
+      }
+    } else if (dragState.type === 'resize' && dragState.newEndDay !== undefined) {
+      const newEndDay = Math.max(dayOfYear(ev.startDate, state.year), Math.min(days - 1, dragState.newEndDay));
+      ev.endDate = dateStrFromDayOfYear(newEndDay, state.year);
+    }
+    saveState();
+  }
+
+  document.querySelectorAll('.stream-track').forEach(t => t.classList.remove('drag-target'));
+  document.querySelectorAll('.event-block').forEach(el => {
+    el.classList.remove('dragging', 'resizing');
+  });
+  document.body.style.cursor = '';
+  document.getElementById('drag-indicator').style.display = 'none';
+  dragState = null;
+  render();
+});
+
+// ═══════════════════════════════════════════════
+// TRACK DOUBLE CLICK — add event
+// ═══════════════════════════════════════════════
+
+function trackDblClick(e, streamId) {
+  if (e.target.classList.contains('event-block') || e.target.closest('.event-block')) return;
+  const trackEl = document.getElementById('track-' + streamId);
+  const rect = trackEl.getBoundingClientRect();
+  const mainEl = document.getElementById('main-scroll');
+  const x = e.clientX - rect.left + mainEl.scrollLeft - 200; // subtract sidebar
+  const day = Math.max(0, Math.min(daysInYear(state.year) - 1, xToDay(x)));
+  const startDate = dateStrFromDayOfYear(day, state.year);
+  const endDate = dateStrFromDayOfYear(Math.min(daysInYear(state.year) - 1, day + 6), state.year);
+  openEventModal(null, streamId, { startDate, endDate });
+}
+
+// ═══════════════════════════════════════════════
+// EVENT MODAL
+// ═══════════════════════════════════════════════
+
+let editingEventId = null;
+
+function openEventModal(eventId = null, defaultStreamId = null, defaultDates = null) {
+  editingEventId = eventId;
+  const overlay = document.getElementById('event-modal-overlay');
+  const title = document.getElementById('event-modal-title');
+  const deleteBtn = document.getElementById('ev-delete-btn');
+
+  // Populate stream select
+  const streamSelect = document.getElementById('ev-stream');
+  streamSelect.innerHTML = state.streams.map(s =>
+    `<option value="${s.id}">${s.icon || ''} ${s.name}</option>`
+  ).join('');
+
+  // Icon grid
+  buildIconGrid('ev-icon-grid', 'ev-selected-icon');
+
+  // Color picker
+  buildColorPicker('ev-color-picker', 'ev-selected-color', true);
+
+  if (eventId) {
+    const ev = state.events.find(e => e.id === eventId);
+    if (!ev) return;
+    title.textContent = 'Modifier l\'événement';
+    document.getElementById('ev-title').value = ev.title || '';
+    document.getElementById('ev-start').value = ev.startDate || '';
+    document.getElementById('ev-end').value = ev.endDate || '';
+    streamSelect.value = ev.streamId || '';
+    document.getElementById('ev-note').value = ev.note || '';
+    selectIcon('ev-icon-grid', 'ev-selected-icon', ev.icon || '🎉');
+    selectColor('ev-color-picker', 'ev-selected-color', ev.color || '');
+    deleteBtn.style.display = '';
+  } else {
+    title.textContent = 'Ajouter un événement';
+    document.getElementById('ev-title').value = '';
+    document.getElementById('ev-note').value = '';
+    const today = new Date().toISOString().slice(0,10);
+    document.getElementById('ev-start').value = defaultDates ? defaultDates.startDate : today;
+    document.getElementById('ev-end').value = defaultDates ? defaultDates.endDate : today;
+    if (defaultStreamId) streamSelect.value = defaultStreamId;
+    selectIcon('ev-icon-grid', 'ev-selected-icon', '🎉');
+    selectColor('ev-color-picker', 'ev-selected-color', '');
+    deleteBtn.style.display = 'none';
+  }
+
+  overlay.classList.add('active');
+  setTimeout(() => document.getElementById('ev-title').focus(), 50);
+}
+
+function closeEventModal() {
+  document.getElementById('event-modal-overlay').classList.remove('active');
+  editingEventId = null;
+}
+
+function saveEventModal() {
+  const title = document.getElementById('ev-title').value.trim();
+  if (!title) { document.getElementById('ev-title').focus(); return; }
+  const startDate = document.getElementById('ev-start').value;
+  const endDate = document.getElementById('ev-end').value;
+  if (!startDate || !endDate) return;
+  const streamId = document.getElementById('ev-stream').value;
+  const icon = document.getElementById('ev-selected-icon') ? document.getElementById('ev-selected-icon').value : '🎉';
+  const color = document.getElementById('ev-selected-color') ? document.getElementById('ev-selected-color').value : '';
+  const note = document.getElementById('ev-note').value.trim();
+
+  if (editingEventId) {
+    const ev = state.events.find(e => e.id === editingEventId);
+    if (ev) Object.assign(ev, { title, startDate, endDate, streamId, icon, color, note });
+  } else {
+    state.events.push({ id: genId(), title, startDate, endDate, streamId, icon, color, note });
+  }
+  saveState();
+  render();
+  closeEventModal();
+}
+
+function deleteEventFromModal() {
+  if (!editingEventId) return;
+  if (confirm('Supprimer cet événement ?')) {
+    state.events = state.events.filter(e => e.id !== editingEventId);
+    saveState();
+    render();
+    closeEventModal();
+  }
+}
+
+// ═══════════════════════════════════════════════
+// STREAM MODAL
+// ═══════════════════════════════════════════════
+
+let editingStreamId = null;
+
+function openStreamModal(streamId = null) {
+  editingStreamId = streamId;
+  const overlay = document.getElementById('stream-modal-overlay');
+  const title = document.getElementById('stream-modal-title');
+  const deleteBtn = document.getElementById('st-delete-btn');
+
+  buildIconGrid('st-icon-grid', 'st-selected-icon');
+  buildColorPicker('st-color-picker', 'st-selected-color', false);
+
+  if (streamId) {
+    const st = state.streams.find(s => s.id === streamId);
+    if (!st) return;
+    title.textContent = 'Modifier le stream';
+    document.getElementById('st-name').value = st.name || '';
+    document.getElementById('st-height').value = st.height || 64;
+    selectIcon('st-icon-grid', 'st-selected-icon', st.icon || '📋');
+    selectColor('st-color-picker', 'st-selected-color', st.color || PRESET_COLORS[4]);
+    deleteBtn.style.display = '';
+  } else {
+    title.textContent = 'Nouveau stream';
+    document.getElementById('st-name').value = '';
+    document.getElementById('st-height').value = 64;
+    const colors = [PRESET_COLORS[0],PRESET_COLORS[4],PRESET_COLORS[6],PRESET_COLORS[8],PRESET_COLORS[2]];
+    const usedColors = state.streams.map(s => s.color);
+    const nextColor = colors.find(c => !usedColors.includes(c)) || PRESET_COLORS[Math.floor(Math.random() * PRESET_COLORS.length)];
+    selectIcon('st-icon-grid', 'st-selected-icon', '📋');
+    selectColor('st-color-picker', 'st-selected-color', nextColor);
+    deleteBtn.style.display = 'none';
+  }
+
+  overlay.classList.add('active');
+  setTimeout(() => document.getElementById('st-name').focus(), 50);
+}
+
+function closeStreamModal() {
+  document.getElementById('stream-modal-overlay').classList.remove('active');
+  editingStreamId = null;
+}
+
+function saveStreamModal() {
+  const name = document.getElementById('st-name').value.trim();
+  if (!name) { document.getElementById('st-name').focus(); return; }
+  const icon = document.getElementById('st-selected-icon') ? document.getElementById('st-selected-icon').value : '📋';
+  const color = document.getElementById('st-selected-color') ? document.getElementById('st-selected-color').value : PRESET_COLORS[4];
+  const height = parseInt(document.getElementById('st-height').value) || 64;
+
+  if (editingStreamId) {
+    const st = state.streams.find(s => s.id === editingStreamId);
+    if (st) Object.assign(st, { name, icon, color, height });
+  } else {
+    state.streams.push({ id: genId(), name, icon, color, height });
+  }
+  saveState();
+  render();
+  closeStreamModal();
+}
+
+function deleteStreamFromModal() {
+  if (!editingStreamId) return;
+  const evCount = state.events.filter(e => e.streamId === editingStreamId).length;
+  const msg = evCount > 0
+    ? `Supprimer ce stream et ses ${evCount} événement(s) ?`
+    : 'Supprimer ce stream ?';
+  if (confirm(msg)) {
+    state.streams = state.streams.filter(s => s.id !== editingStreamId);
+    state.events = state.events.filter(e => e.streamId !== editingStreamId);
+    saveState();
+    render();
+    closeStreamModal();
+  }
+}
+
+function confirmDeleteStream(streamId) {
+  const st = state.streams.find(s => s.id === streamId);
+  if (!st) return;
+  const evCount = state.events.filter(e => e.streamId === streamId).length;
+  const msg = evCount > 0
+    ? `Supprimer "${st.name}" et ses ${evCount} événement(s) ?`
+    : `Supprimer "${st.name}" ?`;
+  if (confirm(msg)) {
+    state.streams = state.streams.filter(s => s.id !== streamId);
+    state.events = state.events.filter(e => e.streamId !== streamId);
+    saveState();
+    render();
+  }
+}
+
+// ═══════════════════════════════════════════════
+// ICON & COLOR PICKER HELPERS
+// ═══════════════════════════════════════════════
+
+function buildIconGrid(gridId, hiddenId) {
+  const grid = document.getElementById(gridId);
+  // Create hidden input if needed
+  let hidden = document.getElementById(hiddenId);
+  if (!hidden) {
+    hidden = document.createElement('input');
+    hidden.type = 'hidden';
+    hidden.id = hiddenId;
+    document.body.appendChild(hidden);
+  }
+  grid.innerHTML = ICONS.map(icon =>
+    `<button type="button" class="icon-btn" data-icon="${icon}" onclick="selectIcon('${gridId}','${hiddenId}','${icon}')">${icon}</button>`
+  ).join('');
+}
+
+function selectIcon(gridId, hiddenId, icon) {
+  const hidden = document.getElementById(hiddenId);
+  if (hidden) hidden.value = icon;
+  const grid = document.getElementById(gridId);
+  if (!grid) return;
+  grid.querySelectorAll('.icon-btn').forEach(btn => {
+    btn.classList.toggle('selected', btn.dataset.icon === icon);
+  });
+}
+
+function buildColorPicker(pickerId, hiddenId, withNone) {
+  const picker = document.getElementById(pickerId);
+  let hidden = document.getElementById(hiddenId);
+  if (!hidden) {
+    hidden = document.createElement('input');
+    hidden.type = 'hidden';
+    hidden.id = hiddenId;
+    document.body.appendChild(hidden);
+  }
+
+  let html = '';
+  if (withNone) {
+    html += `<div class="color-swatch" data-color="" style="background: linear-gradient(135deg, #fff 45%, #ccc 45%); border: 2px solid #d1d5db;" title="Couleur du stream" onclick="selectColor('${pickerId}','${hiddenId}','')"></div>`;
+  }
+  html += PRESET_COLORS.map(c =>
+    `<div class="color-swatch" data-color="${c}" style="background:${c}" onclick="selectColor('${pickerId}','${hiddenId}','${c}')"></div>`
+  ).join('');
+  html += `<input type="color" class="color-custom-input" value="#3b82f6" title="Couleur personnalisée"
+    oninput="selectColor('${pickerId}','${hiddenId}',this.value)" />`;
+
+  picker.innerHTML = html;
+}
+
+function selectColor(pickerId, hiddenId, color) {
+  const hidden = document.getElementById(hiddenId);
+  if (hidden) hidden.value = color;
+  const picker = document.getElementById(pickerId);
+  if (!picker) return;
+  picker.querySelectorAll('.color-swatch').forEach(sw => {
+    sw.classList.toggle('selected', sw.dataset.color === color);
+  });
+}
+
+// ═══════════════════════════════════════════════
+// KEYBOARD SHORTCUTS
+// ═══════════════════════════════════════════════
+
+document.addEventListener('keydown', e => {
+  // Close modals with Escape
+  if (e.key === 'Escape') {
+    closeEventModal();
+    closeStreamModal();
+    closeContextMenu();
+  }
+  // Save with Ctrl/Cmd+Enter in modal
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    if (document.getElementById('event-modal-overlay').classList.contains('active')) {
+      saveEventModal();
+    } else if (document.getElementById('stream-modal-overlay').classList.contains('active')) {
+      saveStreamModal();
+    }
+  }
+});
+
+// Close modal on overlay click
+document.getElementById('event-modal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeEventModal();
+});
+document.getElementById('stream-modal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeStreamModal();
+});
+
+// ═══════════════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════════════
+
+function exportPNG() {
+  alert('Pour exporter en image:\n1. Utilisez Ctrl+P (imprimer) → "Enregistrer en PDF"\n2. Ou faites une capture d\'écran (Ctrl+Shift+S sur Windows/Linux, Cmd+Shift+4 sur Mac)\n\nPour un export Excel, vous pouvez copier-coller les données dans un tableau.');
+}
+
+// ═══════════════════════════════════════════════
+// WINDOW RESIZE
+// ═══════════════════════════════════════════════
+
+let resizeTimeout;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(() => {
+    if (state.dayWidth === 0) render(); // re-render only if auto zoom
+  }, 150);
+});
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+
+loadState();
+
+if (state.streams.length === 0) {
+  // Default streams
+  const s1id = genId();
+  const s2id = genId();
+  const s3id = genId();
+  state.streams = [
+    { id: s1id, name: 'Événements', icon: '🎉', color: '#10b981', height: 64 },
+    { id: s2id, name: 'Salons',     icon: '🏪', color: '#3b82f6', height: 64 },
+    { id: s3id, name: 'Réunions',   icon: '👥', color: '#f59e0b', height: 64 },
+  ];
+  const yr = state.year;
+  state.events = [
+    { id: genId(), streamId: s1id, title: 'Lancement produit', icon: '🚀', startDate: `${yr}-01-15`, endDate: `${yr}-01-18`, color: '', note: '' },
+    { id: genId(), streamId: s1id, title: 'Conférence annuelle', icon: '🎤', startDate: `${yr}-03-10`, endDate: `${yr}-03-12`, color: '', note: '' },
+    { id: genId(), streamId: s1id, title: 'Journée portes ouvertes', icon: '🏢', startDate: `${yr}-06-20`, endDate: `${yr}-06-20`, color: '', note: '' },
+    { id: genId(), streamId: s1id, title: 'Soirée clients', icon: '🎊', startDate: `${yr}-11-15`, endDate: `${yr}-11-15`, color: '', note: '' },
+    { id: genId(), streamId: s2id, title: 'CES', icon: '💻', startDate: `${yr}-01-07`, endDate: `${yr}-01-10`, color: '', note: '' },
+    { id: genId(), streamId: s2id, title: 'Salon du Bourget', icon: '✈️', startDate: `${yr}-06-15`, endDate: `${yr}-06-22`, color: '', note: '' },
+    { id: genId(), streamId: s2id, title: 'Paris Retail Week', icon: '🛒', startDate: `${yr}-09-16`, endDate: `${yr}-09-18`, color: '', note: '' },
+    { id: genId(), streamId: s3id, title: 'COMEX Q1', icon: '📊', startDate: `${yr}-01-20`, endDate: `${yr}-01-20`, color: '', note: '' },
+    { id: genId(), streamId: s3id, title: 'COMEX Q2', icon: '📊', startDate: `${yr}-04-15`, endDate: `${yr}-04-15`, color: '', note: '' },
+    { id: genId(), streamId: s3id, title: 'COMEX Q3', icon: '📊', startDate: `${yr}-07-14`, endDate: `${yr}-07-14`, color: '', note: '' },
+    { id: genId(), streamId: s3id, title: 'COMEX Q4', icon: `📊`, startDate: `${yr}-10-13`, endDate: `${yr}-10-13`, color: '', note: '' },
+    { id: genId(), streamId: s3id, title: 'Séminaire direction', icon: '🏆', startDate: `${yr}-05-06`, endDate: `${yr}-05-08`, color: '', note: '' },
+  ];
+  saveState();
+}
+
+render();
+
+// Scroll to today on load
+const todayDay = todayDayOfYear(state.year);
+if (todayDay >= 0) {
+  setTimeout(() => {
+    const mainEl = document.getElementById('main-scroll');
+    const dw = getEffectiveDayWidth();
+    const scrollTo = Math.max(0, dayToX(todayDay) + 200 - mainEl.clientWidth / 2);
+    mainEl.scrollLeft = scrollTo;
+  }, 100);
+}
+</script>
+</body>
+</html>
