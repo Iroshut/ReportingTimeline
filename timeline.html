@@ -24,20 +24,19 @@ body {
   padding: 10px 16px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   flex-shrink: 0;
   z-index: 100;
   box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  flex-wrap: wrap;
 }
-.toolbar h1 { font-size: 16px; font-weight: 700; letter-spacing: 0.5px; flex: 1; }
+.toolbar h1 { font-size: 16px; font-weight: 700; letter-spacing: 0.5px; flex: 1; min-width: 120px; }
 .toolbar .year-nav { display: flex; align-items: center; gap: 8px; }
 .toolbar .year-nav button {
   background: rgba(255,255,255,0.15);
-  border: none;
-  color: white;
+  border: none; color: white;
   width: 28px; height: 28px;
-  border-radius: 6px;
-  cursor: pointer;
+  border-radius: 6px; cursor: pointer;
   font-size: 16px;
   display: flex; align-items: center; justify-content: center;
   transition: background 0.15s;
@@ -54,6 +53,23 @@ body {
   transition: background 0.15s;
 }
 .toolbar .zoom-controls button:hover { background: rgba(255,255,255,0.25); }
+.toolbar-divider {
+  width: 1px; height: 24px;
+  background: rgba(255,255,255,0.2);
+  flex-shrink: 0;
+}
+.btn-toolbar {
+  background: rgba(255,255,255,0.15);
+  border: none; color: white;
+  padding: 6px 12px;
+  border-radius: 6px; cursor: pointer;
+  font-size: 13px; font-weight: 500;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.btn-toolbar:hover { background: rgba(255,255,255,0.25); }
+.btn-toolbar.active { background: #3b82f6; }
+.btn-toolbar.active-red { background: #ef4444; }
 .btn-add-stream {
   background: #3b82f6;
   border: none; color: white;
@@ -61,17 +77,30 @@ body {
   border-radius: 6px; cursor: pointer;
   font-size: 13px; font-weight: 600;
   transition: background 0.15s;
+  white-space: nowrap;
 }
 .btn-add-stream:hover { background: #2563eb; }
-.btn-export {
-  background: rgba(255,255,255,0.15);
-  border: none; color: white;
-  padding: 6px 14px;
-  border-radius: 6px; cursor: pointer;
-  font-size: 13px;
-  transition: background 0.15s;
+
+/* ── Link mode cursor ── */
+body.link-mode .event-block { cursor: crosshair !important; }
+body.link-mode .resize-handle { display: none !important; }
+body.link-mode .event-block:hover {
+  box-shadow: 0 0 0 3px #3b82f6, 0 4px 12px rgba(59,130,246,0.3) !important;
 }
-.btn-export:hover { background: rgba(255,255,255,0.25); }
+
+/* ── Event highlight states ── */
+.event-block.link-source {
+  outline: 3px solid #3b82f6;
+  outline-offset: 2px;
+  z-index: 20 !important;
+}
+.event-block.critical {
+  outline: 3px solid #ef4444;
+  outline-offset: 2px;
+}
+.event-block.critical.link-source {
+  outline-color: #3b82f6;
+}
 
 /* ── Main layout ── */
 .main {
@@ -80,11 +109,12 @@ body {
   position: relative;
 }
 
-/* ── Timeline wrapper (scrollable) ── */
+/* ── Timeline wrapper (scrollable content) ── */
 .timeline-wrapper {
   min-width: 100%;
   display: inline-block;
   vertical-align: top;
+  position: relative;
 }
 
 /* ── Header row ── */
@@ -96,271 +126,158 @@ body {
   background: #f0f2f5;
 }
 .header-sidebar {
-  width: 200px;
-  min-width: 200px;
+  width: 200px; min-width: 200px;
   flex-shrink: 0;
-  position: sticky;
-  left: 0;
-  z-index: 60;
+  position: sticky; left: 0; z-index: 60;
   background: #1e293b;
-  display: flex;
-  align-items: center;
+  display: flex; align-items: center;
   padding: 0 12px;
   color: rgba(255,255,255,0.6);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 0.5px; text-transform: uppercase;
   border-right: 1px solid rgba(255,255,255,0.1);
 }
-.months-header {
-  display: flex;
-  background: #1e293b;
-  border-bottom: 2px solid #334155;
-}
+.months-header { display: flex; background: #1e293b; border-bottom: 2px solid #334155; }
 .month-cell {
-  text-align: center;
-  color: white;
-  font-size: 12px;
-  font-weight: 600;
+  text-align: center; color: white;
+  font-size: 12px; font-weight: 600;
   padding: 6px 0;
   border-right: 1px solid rgba(255,255,255,0.1);
   letter-spacing: 0.3px;
-  position: relative;
-}
-.month-cell::after {
-  content: '';
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 2px;
-  background: transparent;
 }
 
 /* ── Stream rows ── */
-.stream-rows {
-  /* rows stacked */
-}
 .stream-row {
   display: flex;
   border-bottom: 1px solid #e2e8f0;
-  transition: background 0.1s;
 }
-.stream-row:hover .stream-track {
-  background: rgba(0,0,0,0.015);
-}
+.stream-row:hover .stream-track { background: rgba(0,0,0,0.015); }
 
 /* ── Stream sidebar cell ── */
 .stream-sidebar {
-  width: 200px;
-  min-width: 200px;
+  width: 200px; min-width: 200px;
   flex-shrink: 0;
-  position: sticky;
-  left: 0;
-  z-index: 30;
+  position: sticky; left: 0; z-index: 30;
   background: white;
   border-right: 2px solid #e2e8f0;
-  display: flex;
-  align-items: center;
-  padding: 0 10px;
-  gap: 8px;
-  cursor: default;
+  display: flex; align-items: center;
+  padding: 0 10px; gap: 8px;
   box-shadow: 2px 0 6px rgba(0,0,0,0.06);
 }
-.stream-color-dot {
-  width: 10px; height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
+.stream-color-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 .stream-icon { font-size: 16px; flex-shrink: 0; }
 .stream-name {
-  flex: 1;
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  flex: 1; font-size: 13px; font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.stream-actions {
-  display: flex;
-  gap: 2px;
-  opacity: 0;
-  transition: opacity 0.15s;
-}
+.stream-actions { display: flex; gap: 2px; opacity: 0; transition: opacity 0.15s; }
 .stream-sidebar:hover .stream-actions { opacity: 1; }
 .stream-actions button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 3px 5px;
-  border-radius: 4px;
-  font-size: 12px;
-  color: #64748b;
+  background: none; border: none; cursor: pointer;
+  padding: 3px 5px; border-radius: 4px;
+  font-size: 12px; color: #64748b;
   transition: background 0.1s, color 0.1s;
 }
 .stream-actions button:hover { background: #f1f5f9; color: #1e293b; }
 .stream-actions button.del:hover { background: #fee2e2; color: #dc2626; }
 
-/* ── Stream track (timeline area) ── */
+/* ── Stream track ── */
 .stream-track {
-  flex: 1;
-  position: relative;
-  height: 64px;
-  overflow: visible;
+  flex: 1; position: relative;
+  height: 64px; overflow: visible;
 }
-.stream-track-inner {
-  position: relative;
-  height: 100%;
-}
+.stream-track-inner { position: relative; height: 100%; }
 
-/* ── Month grid lines on track ── */
+/* ── Month grid lines ── */
 .month-line {
-  position: absolute;
-  top: 0; bottom: 0;
-  width: 1px;
-  background: #e2e8f0;
+  position: absolute; top: 0; bottom: 0;
+  width: 1px; background: #e2e8f0;
   pointer-events: none;
-}
-.month-line.weekend {
-  background: #f1f5f9;
 }
 
 /* ── Today marker ── */
 .today-marker {
-  position: absolute;
-  top: 0; bottom: 0;
-  width: 2px;
-  background: #ef4444;
-  z-index: 10;
-  pointer-events: none;
+  position: absolute; top: 0; bottom: 0;
+  width: 2px; background: #ef4444;
+  z-index: 10; pointer-events: none;
 }
 .today-marker::before {
   content: 'Aujourd\'hui';
-  position: absolute;
-  top: -20px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 9px;
-  color: #ef4444;
-  font-weight: 700;
-  white-space: nowrap;
-  background: white;
-  padding: 1px 4px;
-  border-radius: 3px;
+  position: absolute; top: -20px;
+  left: 50%; transform: translateX(-50%);
+  font-size: 9px; color: #ef4444; font-weight: 700;
+  white-space: nowrap; background: white;
+  padding: 1px 4px; border-radius: 3px;
   border: 1px solid #fca5a5;
 }
 
 /* ── Event block ── */
 .event-block {
-  position: absolute;
-  height: 40px;
-  top: 12px;
-  border-radius: 8px;
-  cursor: grab;
-  display: flex;
-  align-items: center;
-  padding: 0 10px;
-  gap: 5px;
-  user-select: none;
-  overflow: hidden;
+  position: absolute; height: 40px; top: 12px;
+  border-radius: 8px; cursor: grab;
+  display: flex; align-items: center;
+  padding: 0 10px; gap: 5px;
+  user-select: none; overflow: hidden;
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
   transition: box-shadow 0.1s, transform 0.05s;
-  z-index: 5;
-  min-width: 24px;
-  white-space: nowrap;
+  z-index: 5; min-width: 24px; white-space: nowrap;
 }
-.event-block:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-  z-index: 10;
-}
+.event-block:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.25); z-index: 10; }
 .event-block.dragging {
   cursor: grabbing;
   box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-  opacity: 0.9;
-  z-index: 100;
-  transform: scale(1.02);
+  opacity: 0.9; z-index: 100; transform: scale(1.02);
 }
 .event-block.resizing { cursor: ew-resize; }
 .event-icon { font-size: 14px; flex-shrink: 0; }
-.event-title {
-  font-size: 12px;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+.event-title { font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .resize-handle {
-  position: absolute;
-  right: 0; top: 0; bottom: 0;
-  width: 8px;
-  cursor: ew-resize;
+  position: absolute; right: 0; top: 0; bottom: 0;
+  width: 8px; cursor: ew-resize;
   background: rgba(0,0,0,0.1);
   border-radius: 0 8px 8px 0;
-  opacity: 0;
-  transition: opacity 0.15s;
-  z-index: 2;
+  opacity: 0; transition: opacity 0.15s; z-index: 2;
 }
 .event-block:hover .resize-handle { opacity: 1; }
 
 /* ── Add stream row ── */
 .add-stream-row {
-  display: flex;
-  padding: 8px;
-  background: white;
+  display: flex; padding: 8px; background: white;
   border-top: 2px dashed #e2e8f0;
-  position: sticky;
-  left: 0;
-  width: 200px;
+  position: sticky; left: 0; width: 200px;
 }
 .add-stream-row button {
-  width: 100%;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #64748b;
-  font-size: 13px;
-  padding: 6px;
-  border-radius: 6px;
-  transition: background 0.1s, color 0.1s;
-  text-align: left;
+  width: 100%; background: none; border: none;
+  cursor: pointer; color: #64748b; font-size: 13px;
+  padding: 6px; border-radius: 6px;
+  transition: background 0.1s, color 0.1s; text-align: left;
 }
 .add-stream-row button:hover { background: #f1f5f9; color: #1e293b; }
 
 /* ── Tooltip ── */
 .tooltip {
-  position: fixed;
-  background: #1e293b;
-  color: white;
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-size: 12px;
-  pointer-events: none;
-  z-index: 1000;
-  display: none;
+  position: fixed; background: #1e293b; color: white;
+  padding: 8px 12px; border-radius: 8px;
+  font-size: 12px; pointer-events: none;
+  z-index: 1000; display: none;
   box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-  max-width: 200px;
+  max-width: 220px;
 }
 .tooltip-title { font-weight: 700; margin-bottom: 3px; }
 .tooltip-dates { color: #94a3b8; font-size: 11px; }
 .tooltip-stream { color: #60a5fa; font-size: 11px; margin-top: 2px; }
+.tooltip-links { color: #f59e0b; font-size: 11px; margin-top: 2px; }
 
 /* ── Context menu ── */
 .ctx-menu {
-  position: fixed;
-  background: white;
+  position: fixed; background: white;
   border-radius: 10px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05);
-  z-index: 2000;
-  display: none;
-  overflow: hidden;
-  min-width: 150px;
+  z-index: 2000; display: none; overflow: hidden; min-width: 170px;
 }
 .ctx-item {
-  padding: 9px 14px;
-  cursor: pointer;
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  padding: 9px 14px; cursor: pointer; font-size: 13px;
+  display: flex; align-items: center; gap: 8px;
   transition: background 0.1s;
 }
 .ctx-item:hover { background: #f1f5f9; }
@@ -370,62 +287,43 @@ body {
 
 /* ── Modal ── */
 .modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-  z-index: 500;
-  display: none;
-  align-items: center;
-  justify-content: center;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5); z-index: 500;
+  display: none; align-items: center; justify-content: center;
   backdrop-filter: blur(2px);
 }
 .modal-overlay.active { display: flex; }
 .modal {
-  background: white;
-  border-radius: 16px;
-  width: 500px;
-  max-width: 95vw;
-  max-height: 90vh;
+  background: white; border-radius: 16px;
+  width: 500px; max-width: 95vw; max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0,0,0,0.3);
 }
 .modal-header {
-  padding: 20px 24px 16px;
-  border-bottom: 1px solid #e2e8f0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  padding: 20px 24px 16px; border-bottom: 1px solid #e2e8f0;
+  display: flex; align-items: center; justify-content: space-between;
 }
 .modal-header h2 { font-size: 18px; font-weight: 700; }
 .modal-close {
-  background: none; border: none;
-  cursor: pointer; font-size: 20px;
-  color: #94a3b8; padding: 2px 6px;
-  border-radius: 6px; line-height: 1;
+  background: none; border: none; cursor: pointer; font-size: 20px;
+  color: #94a3b8; padding: 2px 6px; border-radius: 6px; line-height: 1;
   transition: background 0.1s, color 0.1s;
 }
 .modal-close:hover { background: #f1f5f9; color: #1e293b; }
 .modal-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
 .modal-footer {
-  padding: 16px 24px;
-  border-top: 1px solid #e2e8f0;
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
+  padding: 16px 24px; border-top: 1px solid #e2e8f0;
+  display: flex; gap: 8px; justify-content: flex-end;
 }
 
 /* ── Form elements ── */
 .form-group { display: flex; flex-direction: column; gap: 6px; }
 .form-label { font-size: 13px; font-weight: 600; color: #374151; }
 .form-input {
-  border: 1.5px solid #d1d5db;
-  border-radius: 8px;
-  padding: 8px 12px;
-  font-size: 14px;
+  border: 1.5px solid #d1d5db; border-radius: 8px;
+  padding: 8px 12px; font-size: 14px;
   transition: border-color 0.15s, box-shadow 0.15s;
-  outline: none;
-  width: 100%;
-  font-family: inherit;
+  outline: none; width: 100%; font-family: inherit;
 }
 .form-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
 .form-row { display: flex; gap: 12px; }
@@ -433,23 +331,15 @@ body {
 
 /* ── Icon picker ── */
 .icon-picker-grid {
-  display: grid;
-  grid-template-columns: repeat(10, 1fr);
-  gap: 4px;
-  max-height: 160px;
-  overflow-y: auto;
-  padding: 8px;
-  background: #f8fafc;
-  border-radius: 8px;
-  border: 1.5px solid #d1d5db;
+  display: grid; grid-template-columns: repeat(10, 1fr);
+  gap: 4px; max-height: 160px; overflow-y: auto;
+  padding: 8px; background: #f8fafc;
+  border-radius: 8px; border: 1.5px solid #d1d5db;
 }
 .icon-btn {
   width: 36px; height: 36px;
-  border: 2px solid transparent;
-  border-radius: 8px;
-  background: white;
-  cursor: pointer;
-  font-size: 18px;
+  border: 2px solid transparent; border-radius: 8px;
+  background: white; cursor: pointer; font-size: 18px;
   display: flex; align-items: center; justify-content: center;
   transition: background 0.1s, border-color 0.1s, transform 0.1s;
 }
@@ -458,43 +348,28 @@ body {
 
 /* ── Color picker ── */
 .color-picker-row {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  padding: 8px;
-  background: #f8fafc;
-  border-radius: 8px;
-  border: 1.5px solid #d1d5db;
+  display: flex; gap: 8px; flex-wrap: wrap;
+  padding: 8px; background: #f8fafc;
+  border-radius: 8px; border: 1.5px solid #d1d5db;
   align-items: center;
 }
 .color-swatch {
-  width: 30px; height: 30px;
-  border-radius: 50%;
-  cursor: pointer;
+  width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
   border: 3px solid transparent;
-  transition: transform 0.1s, border-color 0.1s;
-  flex-shrink: 0;
+  transition: transform 0.1s, border-color 0.1s; flex-shrink: 0;
 }
 .color-swatch:hover { transform: scale(1.2); }
 .color-swatch.selected { border-color: #1e293b; }
 .color-custom-input {
-  border: 1.5px solid #d1d5db;
-  border-radius: 6px;
-  padding: 2px;
-  width: 36px; height: 30px;
-  cursor: pointer;
+  border: 1.5px solid #d1d5db; border-radius: 6px;
+  padding: 2px; width: 36px; height: 30px; cursor: pointer;
 }
 
 /* ── Buttons ── */
 .btn {
-  padding: 8px 18px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  transition: background 0.15s, opacity 0.15s;
-  font-family: inherit;
+  padding: 8px 18px; border-radius: 8px; border: none;
+  cursor: pointer; font-size: 14px; font-weight: 600;
+  transition: background 0.15s, opacity 0.15s; font-family: inherit;
 }
 .btn-primary { background: #3b82f6; color: white; }
 .btn-primary:hover { background: #2563eb; }
@@ -503,7 +378,7 @@ body {
 .btn-danger { background: #fee2e2; color: #dc2626; }
 .btn-danger:hover { background: #fecaca; }
 
-/* ── Drag ghost stream highlight ── */
+/* ── Drag target highlight ── */
 .stream-track.drag-target { background: rgba(59,130,246,0.08); }
 
 /* ── Scrollbar ── */
@@ -512,31 +387,58 @@ body {
 .main::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 .main::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-/* ── Empty state ── */
+/* ── Empty state hint ── */
 .empty-hint {
-  position: absolute;
-  left: 50%;
-  top: 50%;
+  position: absolute; left: 50%; top: 50%;
   transform: translate(-50%, -50%);
-  color: #94a3b8;
-  font-size: 12px;
-  pointer-events: none;
-  white-space: nowrap;
+  color: #94a3b8; font-size: 12px;
+  pointer-events: none; white-space: nowrap;
 }
 
 /* ── Drag date indicator ── */
 .drag-indicator {
-  position: fixed;
-  background: #1e293b;
-  color: white;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 4px 8px;
-  border-radius: 6px;
+  position: fixed; background: #1e293b; color: white;
+  font-size: 11px; font-weight: 600; padding: 4px 8px;
+  border-radius: 6px; pointer-events: none;
+  z-index: 2000; display: none; white-space: nowrap;
+}
+
+/* ── SVG link overlay ── */
+#links-svg {
+  position: absolute; top: 0; left: 0;
+  pointer-events: none; z-index: 25;
+  overflow: visible;
+}
+.link-hit {
+  pointer-events: stroke;
+  stroke: transparent; stroke-width: 14px;
+  fill: none; cursor: pointer;
+}
+.link-vis { pointer-events: none; fill: none; }
+.link-vis.normal {
+  stroke: #94a3b8; stroke-width: 1.5px;
+  stroke-dasharray: 6 3;
+}
+.link-vis.critical {
+  stroke: #ef4444; stroke-width: 2.5px;
+}
+.link-ghost {
+  pointer-events: none; fill: none;
+  stroke: #3b82f6; stroke-width: 1.5px;
+  stroke-dasharray: 7 4; opacity: 0.8;
+}
+
+/* ── Link mode toast hint ── */
+.link-hint {
+  position: fixed; bottom: 16px; left: 50%;
+  transform: translateX(-50%);
+  background: #1e293b; color: white;
+  padding: 8px 16px; border-radius: 8px;
+  font-size: 13px; z-index: 300;
   pointer-events: none;
-  z-index: 2000;
-  display: none;
-  white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  transition: opacity 0.3s;
+  border: 1px solid rgba(59,130,246,0.4);
 }
 </style>
 </head>
@@ -544,19 +446,33 @@ body {
 
 <div class="toolbar">
   <h1>📅 Timeline Annuelle</h1>
+
   <div class="year-nav">
     <button onclick="changeYear(-1)" title="Année précédente">‹</button>
     <span class="year-display" id="year-display">2026</span>
     <button onclick="changeYear(1)" title="Année suivante">›</button>
   </div>
+
   <div class="zoom-controls">
     <span style="opacity:0.6">Zoom:</span>
     <button onclick="zoom(-1)" title="Réduire">−</button>
     <button onclick="zoom(1)" title="Agrandir">+</button>
-    <button onclick="resetZoom()" title="Réinitialiser" style="font-size:11px;width:auto;padding:0 8px;">Auto</button>
+    <button onclick="resetZoom()" style="font-size:11px;width:auto;padding:0 8px;">Auto</button>
   </div>
+
+  <div class="toolbar-divider"></div>
+
+  <button id="btn-link-mode" class="btn-toolbar" onclick="toggleLinkMode()" title="Mode lien — créer des dépendances entre événements (L)">
+    🔗 Lier
+  </button>
+  <button id="btn-critical" class="btn-toolbar" onclick="toggleCriticalPath()" title="Afficher le chemin critique (K)">
+    ⚡ Critique
+  </button>
+
+  <div class="toolbar-divider"></div>
+
   <button class="btn-add-stream" onclick="openStreamModal()">+ Stream</button>
-  <button class="btn-export" onclick="exportPNG()">📷 Export</button>
+  <button class="btn-toolbar" onclick="exportPNG()">📷 Export</button>
 </div>
 
 <div class="main" id="main-scroll">
@@ -570,16 +486,22 @@ body {
   <div class="tooltip-title" id="tooltip-title"></div>
   <div class="tooltip-dates" id="tooltip-dates"></div>
   <div class="tooltip-stream" id="tooltip-stream"></div>
+  <div class="tooltip-links" id="tooltip-links"></div>
 </div>
 
 <!-- Drag date indicator -->
 <div class="drag-indicator" id="drag-indicator"></div>
 
+<!-- Link mode hint -->
+<div class="link-hint" id="link-hint" style="display:none"></div>
+
 <!-- Context menu -->
 <div class="ctx-menu" id="ctx-menu">
   <div class="ctx-item" onclick="ctxEdit()">✏️ Modifier</div>
   <div class="ctx-item" onclick="ctxDuplicate()">📋 Dupliquer</div>
+  <div class="ctx-item" id="ctx-link-item" onclick="ctxSetLinkSource()" style="display:none">🔗 Lier à...</div>
   <div class="ctx-separator"></div>
+  <div class="ctx-item" id="ctx-delete-links" onclick="ctxDeleteLinks()" style="display:none">🔗 Supprimer les liens</div>
   <div class="ctx-item danger" onclick="ctxDelete()">🗑️ Supprimer</div>
 </div>
 
@@ -615,9 +537,7 @@ body {
       </div>
       <div class="form-group">
         <label class="form-label">Couleur (optionnel — utilise la couleur du stream par défaut)</label>
-        <div class="color-picker-row" id="ev-color-picker">
-          <div class="color-swatch" data-color="" style="background: linear-gradient(135deg, #fff 45%, #ccc 45%); border: 2px solid #d1d5db;" title="Couleur du stream"></div>
-        </div>
+        <div class="color-picker-row" id="ev-color-picker"></div>
       </div>
       <div class="form-group">
         <label class="form-label">Note (optionnel)</label>
@@ -701,11 +621,23 @@ const MONTHS_SHORT = ['Jan','Fév','Mar','Avr','Mai','Jun',
 
 let state = {
   year: new Date().getFullYear(),
-  dayWidth: 0, // 0 = auto
+  dayWidth: 0,
   streams: [],
   events: [],
+  links: [],     // { id, fromId, toId }
   _nextId: 1,
 };
+
+// UI-only state (not persisted)
+const ui = {
+  linkMode: false,
+  linkSource: null,    // eventId of source while drawing a link
+  criticalPath: false,
+  criticalEventIds: new Set(),
+  criticalLinkIds: new Set(),
+};
+
+let _headerH = 36; // cached header height after each render
 
 function genId() { return 'id_' + (state._nextId++); }
 
@@ -715,6 +647,7 @@ function loadState() {
     if (saved) {
       const parsed = JSON.parse(saved);
       state = { ...state, ...parsed };
+      if (!state.links) state.links = [];
     }
   } catch(e) {}
 }
@@ -732,21 +665,13 @@ function saveState() {
 function isLeapYear(y) {
   return (y % 4 === 0 && y % 100 !== 0) || (y % 400 === 0);
 }
+function daysInYear(y) { return isLeapYear(y) ? 366 : 365; }
+function daysInMonth(year, month) { return new Date(year, month + 1, 0).getDate(); }
 
-function daysInYear(y) {
-  return isLeapYear(y) ? 366 : 365;
-}
-
-function daysInMonth(year, month) { // month: 0-11
-  return new Date(year, month + 1, 0).getDate();
-}
-
-// Returns 0-based day index within the year
 function dayOfYear(dateStr, year) {
   const d = new Date(dateStr + 'T00:00:00');
   const start = new Date(year, 0, 1);
-  const diff = d - start;
-  return Math.round(diff / 86400000);
+  return Math.round((d - start) / 86400000);
 }
 
 function dateStrFromDayOfYear(dayIdx, year) {
@@ -755,22 +680,9 @@ function dateStrFromDayOfYear(dayIdx, year) {
   return d.toISOString().slice(0, 10);
 }
 
-function formatDate(dateStr) {
-  const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
-}
-
 function formatDateShort(dateStr) {
   const d = new Date(dateStr + 'T00:00:00');
   return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-}
-
-function clampDate(dateStr, year) {
-  const min = `${year}-01-01`;
-  const max = `${year}-12-31`;
-  if (dateStr < min) return min;
-  if (dateStr > max) return max;
-  return dateStr;
 }
 
 function todayDayOfYear(year) {
@@ -780,27 +692,164 @@ function todayDayOfYear(year) {
 }
 
 // ═══════════════════════════════════════════════
-// COMPUTED
+// LAYOUT COMPUTED
 // ═══════════════════════════════════════════════
 
 function getEffectiveDayWidth() {
   if (state.dayWidth > 0) return state.dayWidth;
-  // Auto: fit year in available width
   const mainEl = document.getElementById('main-scroll');
   const available = (mainEl ? mainEl.clientWidth : window.innerWidth) - 200 - 16;
   return Math.max(4, Math.floor(available / daysInYear(state.year)));
 }
 
-function dayToX(dayIdx) {
-  return dayIdx * getEffectiveDayWidth();
+function dayToX(dayIdx) { return dayIdx * getEffectiveDayWidth(); }
+function xToDay(x) { return Math.round(x / getEffectiveDayWidth()); }
+function totalWidth() { return daysInYear(state.year) * getEffectiveDayWidth(); }
+
+// ═══════════════════════════════════════════════
+// LINK COORDINATE HELPERS (mathematical — no DOM queries)
+// ═══════════════════════════════════════════════
+
+function streamTopY(streamId) {
+  let y = _headerH;
+  for (const s of state.streams) {
+    if (s.id === streamId) return y;
+    y += (s.height || 64);
+  }
+  return y;
 }
 
-function xToDay(x) {
-  return Math.round(x / getEffectiveDayWidth());
+function eventMidY(ev) {
+  // Vertical center of event block in wrapper coordinates
+  // event-block: top:12px, height:40px → center at +32px from stream top
+  return streamTopY(ev.streamId) + 12 + 20;
 }
 
-function totalWidth() {
-  return daysInYear(state.year) * getEffectiveDayWidth();
+function eventRightX(ev) {
+  const days = daysInYear(state.year);
+  const endDay = Math.min(days - 1, dayOfYear(ev.endDate, state.year));
+  const dw = getEffectiveDayWidth();
+  return Math.max(dw, (endDay + 1)) * dw + 200;
+}
+
+function eventLeftX(ev) {
+  const startDay = Math.max(0, dayOfYear(ev.startDate, state.year));
+  return startDay * getEffectiveDayWidth() + 200;
+}
+
+function bezierD(x1, y1, x2, y2) {
+  const cx = Math.max(30, Math.abs(x2 - x1) * 0.45);
+  return `M ${x1} ${y1} C ${x1+cx} ${y1}, ${x2-cx} ${y2}, ${x2} ${y2}`;
+}
+
+// Convert viewport mouse coords to wrapper-content coords
+function clientToContent(clientX, clientY) {
+  const mainEl = document.getElementById('main-scroll');
+  if (!mainEl) return { x: clientX, y: clientY };
+  const rect = mainEl.getBoundingClientRect();
+  return {
+    x: clientX - rect.left + mainEl.scrollLeft,
+    y: clientY - rect.top + mainEl.scrollTop,
+  };
+}
+
+// ═══════════════════════════════════════════════
+// CRITICAL PATH
+// ═══════════════════════════════════════════════
+
+function eventDuration(ev) {
+  const s = dayOfYear(ev.startDate, state.year);
+  const e = dayOfYear(ev.endDate, state.year);
+  return Math.max(1, e - s + 1);
+}
+
+function computeCriticalPath() {
+  const links = state.links;
+  if (!links.length) return { criticalEventIds: new Set(), criticalLinkIds: new Set() };
+
+  const evMap = {};
+  for (const ev of state.events) evMap[ev.id] = ev;
+
+  // Build adjacency
+  const successors = {};   // id -> [{ linkId, toId }]
+  const predecessors = {}; // id -> [{ linkId, fromId }]
+  for (const ev of state.events) {
+    successors[ev.id] = [];
+    predecessors[ev.id] = [];
+  }
+  for (const lk of links) {
+    if (!successors[lk.fromId]) successors[lk.fromId] = [];
+    if (!predecessors[lk.toId]) predecessors[lk.toId] = [];
+    successors[lk.fromId].push({ linkId: lk.id, toId: lk.toId });
+    predecessors[lk.toId].push({ linkId: lk.id, fromId: lk.fromId });
+  }
+
+  // Topological sort (Kahn's)
+  const inDeg = {};
+  for (const ev of state.events) inDeg[ev.id] = (predecessors[ev.id] || []).length;
+  const queue = state.events.filter(ev => inDeg[ev.id] === 0).map(ev => ev.id);
+  const order = [];
+  while (queue.length) {
+    const cur = queue.shift();
+    order.push(cur);
+    for (const { toId } of (successors[cur] || [])) {
+      if (--inDeg[toId] === 0) queue.push(toId);
+    }
+  }
+
+  // Forward pass: longest accumulated duration
+  const dist = {};
+  const prev = {}; // prev[id] = { fromId, linkId } | null
+  for (const id of order) {
+    const dur = evMap[id] ? eventDuration(evMap[id]) : 0;
+    const preds = predecessors[id] || [];
+    if (!preds.length) {
+      dist[id] = dur; prev[id] = null;
+    } else {
+      let best = -Infinity, bestPred = null;
+      for (const { fromId, linkId } of preds) {
+        const d = (dist[fromId] || 0) + dur;
+        if (d > best) { best = d; bestPred = { fromId, linkId }; }
+      }
+      dist[id] = best; prev[id] = bestPred;
+    }
+  }
+
+  // Find sink with max distance
+  let maxDist = -Infinity, endId = null;
+  for (const id of order) {
+    if ((dist[id] || 0) > maxDist) { maxDist = dist[id]; endId = id; }
+  }
+
+  // Backtrack critical chain
+  const criticalEventIds = new Set();
+  const criticalLinkIds = new Set();
+  let cur = endId;
+  while (cur) {
+    criticalEventIds.add(cur);
+    const p = prev[cur];
+    if (!p) break;
+    criticalLinkIds.add(p.linkId);
+    cur = p.fromId;
+  }
+
+  return { criticalEventIds, criticalLinkIds };
+}
+
+// Detect cycles: DFS from toId, checking if it can reach fromId
+function wouldCreateCycle(fromId, toId) {
+  const visited = new Set();
+  const stack = [toId];
+  while (stack.length) {
+    const cur = stack.pop();
+    if (cur === fromId) return true;
+    if (visited.has(cur)) continue;
+    visited.add(cur);
+    for (const lk of state.links) {
+      if (lk.fromId === cur) stack.push(lk.toId);
+    }
+  }
+  return false;
 }
 
 // ═══════════════════════════════════════════════
@@ -814,24 +863,25 @@ function render() {
   const tw = totalWidth();
   const days = daysInYear(state.year);
 
+  // Compute critical path for event coloring
+  const { criticalEventIds, criticalLinkIds } =
+    ui.criticalPath ? computeCriticalPath() : { criticalEventIds: new Set(), criticalLinkIds: new Set() };
+  ui.criticalEventIds = criticalEventIds;
+  ui.criticalLinkIds = criticalLinkIds;
+
   let html = '';
 
   // ── Header row ──
   html += `<div class="header-row">`;
   html += `<div class="header-sidebar">STREAMS</div>`;
   html += `<div class="months-header" style="width:${tw}px">`;
-
-  let dayOffset = 0;
   for (let m = 0; m < 12; m++) {
     const mDays = daysInMonth(state.year, m);
     const mWidth = mDays * dw;
     const label = dw >= 6 ? MONTHS_FR[m] : (dw >= 3 ? MONTHS_SHORT[m] : '');
-    html += `<div class="month-cell" style="width:${mWidth}px;flex-shrink:0;" title="${MONTHS_FR[m]}">
-      ${label}
-    </div>`;
-    dayOffset += mDays;
+    html += `<div class="month-cell" style="width:${mWidth}px;flex-shrink:0;" title="${MONTHS_FR[m]}">${label}</div>`;
   }
-  html += `</div></div>`; // months-header, header-row
+  html += `</div></div>`;
 
   // ── Stream rows ──
   html += `<div class="stream-rows">`;
@@ -843,13 +893,13 @@ function render() {
   }
 
   for (const stream of state.streams) {
-    const streamHeight = stream.height || 64;
+    const sh = stream.height || 64;
     const streamEvents = state.events.filter(e => e.streamId === stream.id);
 
-    html += `<div class="stream-row" data-stream-id="${stream.id}" style="min-height:${streamHeight}px">`;
+    html += `<div class="stream-row" data-stream-id="${stream.id}" style="min-height:${sh}px">`;
 
     // Sidebar
-    html += `<div class="stream-sidebar" style="min-height:${streamHeight}px">
+    html += `<div class="stream-sidebar" style="min-height:${sh}px">
       <div class="stream-color-dot" style="background:${stream.color}"></div>
       <span class="stream-icon">${stream.icon || '📋'}</span>
       <span class="stream-name" title="${esc(stream.name)}">${esc(stream.name)}</span>
@@ -860,19 +910,21 @@ function render() {
     </div>`;
 
     // Track
-    html += `<div class="stream-track" id="track-${stream.id}" data-stream-id="${stream.id}" style="width:${tw}px;min-height:${streamHeight}px"
-      ondblclick="trackDblClick(event, '${stream.id}')">`;
-    html += `<div class="stream-track-inner" style="height:${streamHeight}px">`;
+    html += `<div class="stream-track" id="track-${stream.id}" data-stream-id="${stream.id}"
+      style="width:${tw}px;min-height:${sh}px"
+      onclick="trackClick(event,'${stream.id}')"
+      ondblclick="trackDblClick(event,'${stream.id}')">`;
+    html += `<div class="stream-track-inner" style="height:${sh}px">`;
 
     // Month grid lines
     let dx = 0;
     for (let m = 0; m < 12; m++) {
       const mDays = daysInMonth(state.year, m);
-      html += `<div class="month-line" style="left:${dx * dw}px"></div>`;
+      html += `<div class="month-line" style="left:${dx*dw}px"></div>`;
       dx += mDays;
     }
 
-    // Today marker (only in first stream to avoid duplication, we'll do it via JS)
+    // Today marker
     const todayDay = todayDayOfYear(state.year);
     if (todayDay >= 0) {
       html += `<div class="today-marker" style="left:${dayToX(todayDay)}px"></div>`;
@@ -887,34 +939,37 @@ function render() {
       const startDay = dayOfYear(ev.startDate, state.year);
       const endDay = dayOfYear(ev.endDate, state.year);
       if (endDay < 0 || startDay >= days) continue;
-      const cStartDay = Math.max(0, startDay);
-      const cEndDay = Math.min(days - 1, endDay);
-      const leftPx = dayToX(cStartDay);
-      const widthPx = Math.max(dw, (cEndDay - cStartDay + 1) * dw);
+      const cStart = Math.max(0, startDay);
+      const cEnd = Math.min(days - 1, endDay);
+      const leftPx = dayToX(cStart);
+      const widthPx = Math.max(dw, (cEnd - cStart + 1) * dw);
       const evColor = ev.color || stream.color;
       const textColor = luminance(evColor) > 0.4 ? '#1e293b' : '#ffffff';
       const showTitle = widthPx > 40;
       const showIcon = widthPx > 20;
+      const isCritical = ui.criticalPath && criticalEventIds.has(ev.id);
+      const isSource = ui.linkMode && ui.linkSource === ev.id;
+      const extraClass = [isCritical ? 'critical' : '', isSource ? 'link-source' : ''].filter(Boolean).join(' ');
 
-      html += `<div class="event-block"
+      html += `<div class="event-block ${extraClass}"
         data-event-id="${ev.id}"
         style="left:${leftPx}px;width:${widthPx}px;background:${evColor};color:${textColor};"
-        onmousedown="startEventDrag(event, '${ev.id}')"
-        oncontextmenu="openContextMenu(event, '${ev.id}')"
-        ondblclick="openEventModal('${ev.id}');event.stopPropagation();"
-        onmouseenter="showTooltip(event, '${ev.id}')"
+        onmousedown="evMouseDown(event,'${ev.id}')"
+        onclick="evClick(event,'${ev.id}')"
+        ondblclick="evDblClick(event,'${ev.id}')"
+        oncontextmenu="openContextMenu(event,'${ev.id}')"
+        onmouseenter="showTooltip(event,'${ev.id}')"
         onmouseleave="hideTooltip()">
-        ${showIcon ? `<span class="event-icon">${ev.icon || '📌'}</span>` : ''}
+        ${showIcon ? `<span class="event-icon">${ev.icon||'📌'}</span>` : ''}
         ${showTitle ? `<span class="event-title">${esc(ev.title)}</span>` : ''}
-        <div class="resize-handle" onmousedown="startEventResize(event, '${ev.id}')"></div>
+        <div class="resize-handle" onmousedown="startEventResize(event,'${ev.id}')"></div>
       </div>`;
     }
 
-    html += `</div></div>`; // track-inner, stream-track
-    html += `</div>`; // stream-row
+    html += `</div></div></div>`; // track-inner, stream-track, stream-row
   }
 
-  // Add stream button row
+  // Add stream button
   if (state.streams.length > 0) {
     html += `<div style="display:flex;">
       <div class="add-stream-row">
@@ -925,24 +980,240 @@ function render() {
 
   html += `</div>`; // stream-rows
   wrapper.innerHTML = html;
+
+  // Cache header height after DOM is built
+  const hr = document.querySelector('.header-row');
+  if (hr) _headerH = hr.offsetHeight;
+
+  // Render SVG link overlay
+  renderLinks();
 }
 
 function esc(str) {
   return String(str)
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;');
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 function luminance(hex) {
   hex = hex.replace('#','');
   if (hex.length === 3) hex = hex.split('').map(c=>c+c).join('');
-  const r = parseInt(hex.slice(0,2),16)/255;
-  const g = parseInt(hex.slice(2,4),16)/255;
-  const b = parseInt(hex.slice(4,6),16)/255;
-  const toLinear = c => c <= 0.04045 ? c/12.92 : Math.pow((c+0.055)/1.055, 2.4);
-  return 0.2126*toLinear(r) + 0.7152*toLinear(g) + 0.0722*toLinear(b);
+  const r=parseInt(hex.slice(0,2),16)/255;
+  const g=parseInt(hex.slice(2,4),16)/255;
+  const b=parseInt(hex.slice(4,6),16)/255;
+  const toL = c => c<=0.04045 ? c/12.92 : Math.pow((c+0.055)/1.055,2.4);
+  return 0.2126*toL(r)+0.7152*toL(g)+0.0722*toL(b);
+}
+
+// ═══════════════════════════════════════════════
+// SVG LINKS OVERLAY
+// ═══════════════════════════════════════════════
+
+function renderLinks() {
+  const old = document.getElementById('links-svg');
+  if (old) old.remove();
+
+  if (!state.links.length && !ui.linkMode) return;
+
+  const wrapper = document.getElementById('timeline-wrapper');
+  if (!wrapper) return;
+
+  const tw = totalWidth() + 200;
+  const th = wrapper.scrollHeight || wrapper.offsetHeight || 500;
+
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.id = 'links-svg';
+  svg.setAttribute('width', tw);
+  svg.setAttribute('height', th);
+
+  // Arrowhead markers
+  const defs = document.createElementNS(ns, 'defs');
+  const makeMarker = (id, color) => {
+    const m = document.createElementNS(ns, 'marker');
+    m.setAttribute('id', id);
+    m.setAttribute('viewBox', '0 0 10 10');
+    m.setAttribute('refX', '9'); m.setAttribute('refY', '5');
+    m.setAttribute('markerWidth', '6'); m.setAttribute('markerHeight', '6');
+    m.setAttribute('orient', 'auto-start-reverse');
+    const p = document.createElementNS(ns, 'path');
+    p.setAttribute('d', 'M 0 0 L 10 5 L 0 10 z');
+    p.setAttribute('fill', color);
+    m.appendChild(p);
+    return m;
+  };
+  defs.appendChild(makeMarker('arrow-n', '#94a3b8'));
+  defs.appendChild(makeMarker('arrow-c', '#ef4444'));
+  defs.appendChild(makeMarker('arrow-g', '#3b82f6'));
+  svg.appendChild(defs);
+
+  const evMap = {};
+  for (const ev of state.events) evMap[ev.id] = ev;
+
+  // Draw each link
+  for (const lk of state.links) {
+    const fEv = evMap[lk.fromId];
+    const tEv = evMap[lk.toId];
+    if (!fEv || !tEv) continue;
+
+    const x1 = eventRightX(fEv);
+    const y1 = eventMidY(fEv);
+    const x2 = eventLeftX(tEv);
+    const y2 = eventMidY(tEv);
+    const d = bezierD(x1, y1, x2, y2);
+    const isCrit = ui.criticalPath && ui.criticalLinkIds.has(lk.id);
+
+    const g = document.createElementNS(ns, 'g');
+    g.dataset.linkId = lk.id;
+
+    // Visual path
+    const vis = document.createElementNS(ns, 'path');
+    vis.setAttribute('d', d);
+    vis.setAttribute('class', `link-vis ${isCrit ? 'critical' : 'normal'}`);
+    vis.setAttribute('marker-end', `url(#${isCrit ? 'arrow-c' : 'arrow-n'})`);
+
+    // Hit zone (wider transparent stroke for easy click)
+    const hit = document.createElementNS(ns, 'path');
+    hit.setAttribute('d', d);
+    hit.setAttribute('class', 'link-hit');
+    hit.style.pointerEvents = 'stroke';
+    hit.title = 'Cliquer pour supprimer ce lien';
+    hit.addEventListener('click', e => {
+      e.stopPropagation();
+      if (confirm('Supprimer ce lien ?')) {
+        state.links = state.links.filter(l => l.id !== lk.id);
+        saveState();
+        render();
+      }
+    });
+    hit.addEventListener('mouseenter', () => vis.style.strokeWidth = isCrit ? '4px' : '2.5px');
+    hit.addEventListener('mouseleave', () => vis.style.strokeWidth = '');
+
+    g.appendChild(vis);
+    g.appendChild(hit);
+    svg.appendChild(g);
+  }
+
+  // Ghost path (source → mouse, shown while drawing a link)
+  const ghost = document.createElementNS(ns, 'path');
+  ghost.id = 'link-ghost';
+  ghost.setAttribute('class', 'link-ghost');
+  ghost.setAttribute('marker-end', 'url(#arrow-g)');
+  ghost.style.display = ui.linkMode && ui.linkSource ? '' : 'none';
+  svg.appendChild(ghost);
+
+  wrapper.appendChild(svg);
+}
+
+// Update only the ghost path on mousemove (no full rebuild)
+function updateGhostPath(clientX, clientY) {
+  const ghost = document.getElementById('link-ghost');
+  if (!ghost) return;
+  if (!ui.linkMode || !ui.linkSource) {
+    ghost.style.display = 'none';
+    return;
+  }
+  const srcEv = state.events.find(e => e.id === ui.linkSource);
+  if (!srcEv) return;
+  const p = clientToContent(clientX, clientY);
+  const x1 = eventRightX(srcEv), y1 = eventMidY(srcEv);
+  ghost.setAttribute('d', bezierD(x1, y1, p.x, p.y));
+  ghost.style.display = '';
+}
+
+// ═══════════════════════════════════════════════
+// LINK MODE
+// ═══════════════════════════════════════════════
+
+function toggleLinkMode() {
+  ui.linkMode = !ui.linkMode;
+  if (!ui.linkMode) cancelLinkSource();
+  document.body.classList.toggle('link-mode', ui.linkMode);
+  document.getElementById('btn-link-mode').classList.toggle('active', ui.linkMode);
+  updateLinkHint();
+  renderLinks();
+}
+
+function toggleCriticalPath() {
+  ui.criticalPath = !ui.criticalPath;
+  document.getElementById('btn-critical').classList.toggle('active-red', ui.criticalPath);
+  document.getElementById('btn-critical').classList.toggle('active', false);
+  render();
+}
+
+function cancelLinkSource() {
+  ui.linkSource = null;
+  document.querySelectorAll('.event-block.link-source').forEach(el => el.classList.remove('link-source'));
+  const ghost = document.getElementById('link-ghost');
+  if (ghost) ghost.style.display = 'none';
+  updateLinkHint();
+}
+
+function deleteLink(linkId) {
+  state.links = state.links.filter(l => l.id !== linkId);
+  saveState();
+  render();
+}
+
+function updateLinkHint() {
+  const hint = document.getElementById('link-hint');
+  if (!ui.linkMode) {
+    hint.style.display = 'none';
+    return;
+  }
+  hint.style.display = '';
+  if (!ui.linkSource) {
+    hint.textContent = '🔗 Mode lien — cliquez sur un événement source';
+  } else {
+    const srcEv = state.events.find(e => e.id === ui.linkSource);
+    hint.textContent = `🔗 "${srcEv ? srcEv.title : '?'}" sélectionné — cliquez sur l\'événement cible (Échap pour annuler)`;
+  }
+}
+
+// Called from event block onclick
+function evClick(e, eventId) {
+  if (!ui.linkMode) return;
+  e.stopPropagation();
+  hideTooltip();
+
+  if (!ui.linkSource) {
+    // First click: set source
+    ui.linkSource = eventId;
+    const el = document.querySelector(`[data-event-id="${eventId}"]`);
+    if (el) el.classList.add('link-source');
+    updateLinkHint();
+    // Show ghost immediately
+    const ghost = document.getElementById('link-ghost');
+    if (ghost) ghost.style.display = '';
+  } else {
+    if (eventId === ui.linkSource) { cancelLinkSource(); return; }
+    const duplicate = state.links.some(l => l.fromId === ui.linkSource && l.toId === eventId);
+    if (duplicate) {
+      cancelLinkSource();
+      return;
+    }
+    if (wouldCreateCycle(ui.linkSource, eventId)) {
+      alert('Ce lien créerait une dépendance circulaire.');
+      cancelLinkSource();
+      return;
+    }
+    state.links.push({ id: genId(), fromId: ui.linkSource, toId: eventId });
+    saveState();
+    cancelLinkSource();
+    render();
+  }
+}
+
+function evMouseDown(e, eventId) {
+  if (ui.linkMode) return; // prevent drag in link mode
+  if (e.target.classList.contains('resize-handle')) return;
+  startEventDrag(e, eventId);
+}
+
+function evDblClick(e, eventId) {
+  if (ui.linkMode) return;
+  openEventModal(eventId);
+  e.stopPropagation();
 }
 
 // ═══════════════════════════════════════════════
@@ -956,53 +1227,45 @@ function zoom(dir) {
   let newIdx = (idx === -1) ? steps.length - 1 : idx + dir;
   newIdx = Math.max(0, Math.min(steps.length - 1, newIdx));
   state.dayWidth = steps[newIdx];
-  saveState();
-  render();
+  saveState(); render();
 }
 
-function resetZoom() {
-  state.dayWidth = 0;
-  saveState();
-  render();
-}
-
-function changeYear(dir) {
-  state.year += dir;
-  saveState();
-  render();
-}
+function resetZoom() { state.dayWidth = 0; saveState(); render(); }
+function changeYear(dir) { state.year += dir; saveState(); render(); }
 
 // ═══════════════════════════════════════════════
 // TOOLTIP
 // ═══════════════════════════════════════════════
 
 function showTooltip(e, eventId) {
+  if (ui.linkMode) return;
   const ev = state.events.find(x => x.id === eventId);
   if (!ev) return;
   const stream = state.streams.find(s => s.id === ev.streamId);
   const tooltip = document.getElementById('tooltip');
-  document.getElementById('tooltip-title').textContent = (ev.icon || '') + ' ' + ev.title;
+  document.getElementById('tooltip-title').textContent = (ev.icon||'') + ' ' + ev.title;
   document.getElementById('tooltip-dates').textContent = formatDateShort(ev.startDate) + ' → ' + formatDateShort(ev.endDate);
   document.getElementById('tooltip-stream').textContent = stream ? (stream.icon + ' ' + stream.name) : '';
+  const linkCount = state.links.filter(l => l.fromId === eventId || l.toId === eventId).length;
+  const linksEl = document.getElementById('tooltip-links');
+  linksEl.textContent = linkCount > 0 ? `🔗 ${linkCount} lien${linkCount>1?'s':''}` : '';
+  linksEl.style.display = linkCount > 0 ? '' : 'none';
   tooltip.style.display = 'block';
-  positionTooltip(e);
+  posTooltip(e);
 }
 
 function hideTooltip() {
   document.getElementById('tooltip').style.display = 'none';
 }
 
-function positionTooltip(e) {
-  const tooltip = document.getElementById('tooltip');
-  const x = e.clientX + 14;
-  const y = e.clientY - 10;
-  tooltip.style.left = Math.min(x, window.innerWidth - 220) + 'px';
-  tooltip.style.top = Math.min(y, window.innerHeight - 100) + 'px';
+function posTooltip(e) {
+  const t = document.getElementById('tooltip');
+  t.style.left = Math.min(e.clientX + 14, window.innerWidth - 230) + 'px';
+  t.style.top = Math.min(e.clientY - 10, window.innerHeight - 110) + 'px';
 }
 
 document.addEventListener('mousemove', e => {
-  const tooltip = document.getElementById('tooltip');
-  if (tooltip.style.display === 'block') positionTooltip(e);
+  if (document.getElementById('tooltip').style.display === 'block') posTooltip(e);
 });
 
 // ═══════════════════════════════════════════════
@@ -1012,16 +1275,16 @@ document.addEventListener('mousemove', e => {
 let ctxEventId = null;
 
 function openContextMenu(e, eventId) {
-  e.preventDefault();
-  e.stopPropagation();
+  e.preventDefault(); e.stopPropagation();
   hideTooltip();
   ctxEventId = eventId;
+  const hasLinks = state.links.some(l => l.fromId === eventId || l.toId === eventId);
+  document.getElementById('ctx-delete-links').style.display = hasLinks ? '' : 'none';
+  document.getElementById('ctx-link-item').style.display = ui.linkMode ? 'none' : '';
   const menu = document.getElementById('ctx-menu');
   menu.style.display = 'block';
-  const x = Math.min(e.clientX, window.innerWidth - 160);
-  const y = Math.min(e.clientY, window.innerHeight - 120);
-  menu.style.left = x + 'px';
-  menu.style.top = y + 'px';
+  menu.style.left = Math.min(e.clientX, window.innerWidth - 180) + 'px';
+  menu.style.top = Math.min(e.clientY, window.innerHeight - 160) + 'px';
 }
 
 function closeContextMenu() {
@@ -1029,10 +1292,7 @@ function closeContextMenu() {
   ctxEventId = null;
 }
 
-function ctxEdit() {
-  if (ctxEventId) openEventModal(ctxEventId);
-  closeContextMenu();
-}
+function ctxEdit() { if (ctxEventId) openEventModal(ctxEventId); closeContextMenu(); }
 
 function ctxDuplicate() {
   if (!ctxEventId) return;
@@ -1044,38 +1304,59 @@ function ctxDuplicate() {
   start.setDate(start.getDate() + 1);
   end.setTime(start.getTime() + dur);
   state.events.push({
-    ...ev,
-    id: genId(),
+    ...ev, id: genId(),
     title: ev.title + ' (copie)',
     startDate: start.toISOString().slice(0,10),
     endDate: end.toISOString().slice(0,10),
   });
-  saveState();
-  render();
+  saveState(); render(); closeContextMenu();
+}
+
+function ctxSetLinkSource() {
+  if (!ctxEventId) { closeContextMenu(); return; }
+  toggleLinkMode(); // activate link mode if not already
+  if (!ui.linkMode) toggleLinkMode(); // ensure it's on
+  ui.linkSource = ctxEventId;
+  const el = document.querySelector(`[data-event-id="${ctxEventId}"]`);
+  if (el) el.classList.add('link-source');
+  updateLinkHint();
+  const ghost = document.getElementById('link-ghost');
+  if (ghost) ghost.style.display = '';
+  closeContextMenu();
+}
+
+function ctxDeleteLinks() {
+  if (!ctxEventId) return;
+  const count = state.links.filter(l => l.fromId === ctxEventId || l.toId === ctxEventId).length;
+  if (count === 0) { closeContextMenu(); return; }
+  if (confirm(`Supprimer ${count} lien${count>1?'s':''} de cet événement ?`)) {
+    state.links = state.links.filter(l => l.fromId !== ctxEventId && l.toId !== ctxEventId);
+    saveState(); render();
+  }
   closeContextMenu();
 }
 
 function ctxDelete() {
   if (!ctxEventId) return;
   state.events = state.events.filter(e => e.id !== ctxEventId);
-  saveState();
-  render();
-  closeContextMenu();
+  state.links = state.links.filter(l => l.fromId !== ctxEventId && l.toId !== ctxEventId);
+  saveState(); render(); closeContextMenu();
 }
 
-document.addEventListener('click', () => closeContextMenu());
+document.addEventListener('click', e => {
+  if (!e.target.closest('.ctx-menu')) closeContextMenu();
+});
 
 // ═══════════════════════════════════════════════
-// DRAG & DROP — MOVE EVENT
+// DRAG & DROP
 // ═══════════════════════════════════════════════
 
 let dragState = null;
 
 function startEventDrag(e, eventId) {
-  if (e.target.classList.contains('resize-handle')) return;
+  if (ui.linkMode) return;
   if (e.button !== 0) return;
-  e.stopPropagation();
-  e.preventDefault();
+  e.stopPropagation(); e.preventDefault();
 
   const ev = state.events.find(x => x.id === eventId);
   if (!ev) return;
@@ -1083,50 +1364,39 @@ function startEventDrag(e, eventId) {
   const dw = getEffectiveDayWidth();
   const startDayIdx = dayOfYear(ev.startDate, state.year);
   const endDayIdx = dayOfYear(ev.endDate, state.year);
-  const duration = endDayIdx - startDayIdx;
-
-  const trackEl = document.getElementById('track-' + ev.streamId);
   const mainEl = document.getElementById('main-scroll');
 
   dragState = {
-    type: 'move',
-    eventId,
+    type: 'move', eventId,
     origStartDay: startDayIdx,
     origEndDay: endDayIdx,
-    duration,
+    duration: endDayIdx - startDayIdx,
     origStreamId: ev.streamId,
     mouseStartX: e.clientX,
-    mouseStartY: e.clientY,
     scrollStartX: mainEl.scrollLeft,
-    scrollStartY: mainEl.scrollTop,
     dw,
   };
 
   const eventEl = document.querySelector(`[data-event-id="${eventId}"]`);
   if (eventEl) eventEl.classList.add('dragging');
   document.body.style.cursor = 'grabbing';
-
-  const indicator = document.getElementById('drag-indicator');
-  indicator.style.display = 'block';
+  document.getElementById('drag-indicator').style.display = 'block';
 }
 
 function startEventResize(e, eventId) {
-  e.stopPropagation();
-  e.preventDefault();
+  if (ui.linkMode) return;
+  e.stopPropagation(); e.preventDefault();
 
   const ev = state.events.find(x => x.id === eventId);
   if (!ev) return;
 
   const dw = getEffectiveDayWidth();
-  const startDayIdx = dayOfYear(ev.startDate, state.year);
-  const endDayIdx = dayOfYear(ev.endDate, state.year);
   const mainEl = document.getElementById('main-scroll');
 
   dragState = {
-    type: 'resize',
-    eventId,
-    origStartDay: startDayIdx,
-    origEndDay: endDayIdx,
+    type: 'resize', eventId,
+    origStartDay: dayOfYear(ev.startDate, state.year),
+    origEndDay: dayOfYear(ev.endDate, state.year),
     mouseStartX: e.clientX,
     scrollStartX: mainEl.scrollLeft,
     dw,
@@ -1135,12 +1405,15 @@ function startEventResize(e, eventId) {
   const eventEl = document.querySelector(`[data-event-id="${eventId}"]`);
   if (eventEl) eventEl.classList.add('resizing');
   document.body.style.cursor = 'ew-resize';
-
-  const indicator = document.getElementById('drag-indicator');
-  indicator.style.display = 'block';
+  document.getElementById('drag-indicator').style.display = 'block';
 }
 
 document.addEventListener('mousemove', e => {
+  // Ghost path update (link mode)
+  if (ui.linkMode && ui.linkSource) {
+    updateGhostPath(e.clientX, e.clientY);
+  }
+
   if (!dragState) return;
   const mainEl = document.getElementById('main-scroll');
   const dw = dragState.dw;
@@ -1149,42 +1422,33 @@ document.addEventListener('mousemove', e => {
   if (dragState.type === 'move') {
     const deltaX = (e.clientX - dragState.mouseStartX) + (mainEl.scrollLeft - dragState.scrollStartX);
     const deltaDays = Math.round(deltaX / dw);
+    const newStartDay = Math.max(0, Math.min(days - 1 - dragState.duration, dragState.origStartDay + deltaDays));
+    const newEndDay = newStartDay + dragState.duration;
 
-    let newStartDay = Math.max(0, Math.min(days - 1 - dragState.duration, dragState.origStartDay + deltaDays));
-    let newEndDay = newStartDay + dragState.duration;
-
-    // Update event visually
     const eventEl = document.querySelector(`[data-event-id="${dragState.eventId}"]`);
-    if (eventEl) {
-      eventEl.style.left = (newStartDay * dw) + 'px';
-    }
+    if (eventEl) eventEl.style.left = (newStartDay * dw) + 'px';
 
-    // Detect stream change from Y position
-    const streamRowEls = document.querySelectorAll('.stream-row');
+    // Detect stream change
     let targetStreamId = dragState.origStreamId;
-    for (const rowEl of streamRowEls) {
+    for (const rowEl of document.querySelectorAll('.stream-row')) {
       const rect = rowEl.getBoundingClientRect();
-      if (e.clientY >= rect.top && e.clientY <= rect.bottom) {
-        const sid = rowEl.dataset.streamId;
-        if (sid) { targetStreamId = sid; break; }
+      if (e.clientY >= rect.top && e.clientY <= rect.bottom && rowEl.dataset.streamId) {
+        targetStreamId = rowEl.dataset.streamId; break;
       }
     }
     dragState.currentTargetStreamId = targetStreamId;
 
-    // Highlight target stream
     document.querySelectorAll('.stream-track').forEach(t => t.classList.remove('drag-target'));
     if (targetStreamId !== dragState.origStreamId) {
-      const targetTrack = document.getElementById('track-' + targetStreamId);
-      if (targetTrack) targetTrack.classList.add('drag-target');
+      const tt = document.getElementById('track-' + targetStreamId);
+      if (tt) tt.classList.add('drag-target');
     }
 
-    // Indicator
-    const newStart = dateStrFromDayOfYear(newStartDay, state.year);
-    const newEnd = dateStrFromDayOfYear(newEndDay, state.year);
-    const indicator = document.getElementById('drag-indicator');
-    indicator.style.left = Math.min(e.clientX + 14, window.innerWidth - 220) + 'px';
-    indicator.style.top = (e.clientY - 30) + 'px';
-    indicator.textContent = formatDateShort(newStart) + ' → ' + formatDateShort(newEnd);
+    const ind = document.getElementById('drag-indicator');
+    ind.style.left = Math.min(e.clientX + 14, window.innerWidth - 220) + 'px';
+    ind.style.top = (e.clientY - 30) + 'px';
+    ind.textContent = formatDateShort(dateStrFromDayOfYear(newStartDay, state.year))
+      + ' → ' + formatDateShort(dateStrFromDayOfYear(newEndDay, state.year));
 
     dragState.newStartDay = newStartDay;
     dragState.newEndDay = newEndDay;
@@ -1192,50 +1456,41 @@ document.addEventListener('mousemove', e => {
   } else if (dragState.type === 'resize') {
     const deltaX = (e.clientX - dragState.mouseStartX) + (mainEl.scrollLeft - dragState.scrollStartX);
     const deltaDays = Math.round(deltaX / dw);
-    let newEndDay = Math.max(dragState.origStartDay, Math.min(days - 1, dragState.origEndDay + deltaDays));
+    const newEndDay = Math.max(dragState.origStartDay, Math.min(days - 1, dragState.origEndDay + deltaDays));
 
     const eventEl = document.querySelector(`[data-event-id="${dragState.eventId}"]`);
-    if (eventEl) {
-      const newWidth = Math.max(dw, (newEndDay - dragState.origStartDay + 1) * dw);
-      eventEl.style.width = newWidth + 'px';
-    }
+    if (eventEl) eventEl.style.width = Math.max(dw, (newEndDay - dragState.origStartDay + 1) * dw) + 'px';
 
-    const newEnd = dateStrFromDayOfYear(newEndDay, state.year);
-    const newStart = dateStrFromDayOfYear(dragState.origStartDay, state.year);
-    const indicator = document.getElementById('drag-indicator');
-    indicator.style.left = Math.min(e.clientX + 14, window.innerWidth - 220) + 'px';
-    indicator.style.top = (e.clientY - 30) + 'px';
-    indicator.textContent = formatDateShort(newStart) + ' → ' + formatDateShort(newEnd);
+    const ind = document.getElementById('drag-indicator');
+    ind.style.left = Math.min(e.clientX + 14, window.innerWidth - 220) + 'px';
+    ind.style.top = (e.clientY - 30) + 'px';
+    ind.textContent = formatDateShort(dateStrFromDayOfYear(dragState.origStartDay, state.year))
+      + ' → ' + formatDateShort(dateStrFromDayOfYear(newEndDay, state.year));
 
     dragState.newEndDay = newEndDay;
   }
 });
 
-document.addEventListener('mouseup', e => {
+document.addEventListener('mouseup', () => {
   if (!dragState) return;
   const days = daysInYear(state.year);
-
   const ev = state.events.find(x => x.id === dragState.eventId);
   if (ev) {
     if (dragState.type === 'move' && dragState.newStartDay !== undefined) {
       const newStartDay = Math.max(0, Math.min(days - 1 - dragState.duration, dragState.newStartDay));
-      const newEndDay = newStartDay + dragState.duration;
       ev.startDate = dateStrFromDayOfYear(newStartDay, state.year);
-      ev.endDate = dateStrFromDayOfYear(newEndDay, state.year);
-      if (dragState.currentTargetStreamId) {
-        ev.streamId = dragState.currentTargetStreamId;
-      }
+      ev.endDate = dateStrFromDayOfYear(newStartDay + dragState.duration, state.year);
+      if (dragState.currentTargetStreamId) ev.streamId = dragState.currentTargetStreamId;
     } else if (dragState.type === 'resize' && dragState.newEndDay !== undefined) {
-      const newEndDay = Math.max(dayOfYear(ev.startDate, state.year), Math.min(days - 1, dragState.newEndDay));
-      ev.endDate = dateStrFromDayOfYear(newEndDay, state.year);
+      ev.endDate = dateStrFromDayOfYear(
+        Math.max(dayOfYear(ev.startDate, state.year), Math.min(days - 1, dragState.newEndDay)),
+        state.year
+      );
     }
     saveState();
   }
-
   document.querySelectorAll('.stream-track').forEach(t => t.classList.remove('drag-target'));
-  document.querySelectorAll('.event-block').forEach(el => {
-    el.classList.remove('dragging', 'resizing');
-  });
+  document.querySelectorAll('.event-block').forEach(el => el.classList.remove('dragging','resizing'));
   document.body.style.cursor = '';
   document.getElementById('drag-indicator').style.display = 'none';
   dragState = null;
@@ -1243,15 +1498,23 @@ document.addEventListener('mouseup', e => {
 });
 
 // ═══════════════════════════════════════════════
-// TRACK DOUBLE CLICK — add event
+// TRACK INTERACTIONS
 // ═══════════════════════════════════════════════
 
+function trackClick(e, streamId) {
+  if (ui.linkMode && ui.linkSource) {
+    // Clicking empty track area cancels source selection
+    if (!e.target.closest('.event-block')) cancelLinkSource();
+  }
+}
+
 function trackDblClick(e, streamId) {
-  if (e.target.classList.contains('event-block') || e.target.closest('.event-block')) return;
+  if (ui.linkMode) return;
+  if (e.target.closest('.event-block')) return;
   const trackEl = document.getElementById('track-' + streamId);
-  const rect = trackEl.getBoundingClientRect();
   const mainEl = document.getElementById('main-scroll');
-  const x = e.clientX - rect.left + mainEl.scrollLeft - 200; // subtract sidebar
+  const rect = trackEl.getBoundingClientRect();
+  const x = e.clientX - rect.left + mainEl.scrollLeft;
   const day = Math.max(0, Math.min(daysInYear(state.year) - 1, xToDay(x)));
   const startDate = dateStrFromDayOfYear(day, state.year);
   const endDate = dateStrFromDayOfYear(Math.min(daysInYear(state.year) - 1, day + 6), state.year);
@@ -1267,25 +1530,20 @@ let editingEventId = null;
 function openEventModal(eventId = null, defaultStreamId = null, defaultDates = null) {
   editingEventId = eventId;
   const overlay = document.getElementById('event-modal-overlay');
-  const title = document.getElementById('event-modal-title');
   const deleteBtn = document.getElementById('ev-delete-btn');
 
-  // Populate stream select
   const streamSelect = document.getElementById('ev-stream');
   streamSelect.innerHTML = state.streams.map(s =>
-    `<option value="${s.id}">${s.icon || ''} ${s.name}</option>`
+    `<option value="${s.id}">${s.icon||''} ${s.name}</option>`
   ).join('');
 
-  // Icon grid
   buildIconGrid('ev-icon-grid', 'ev-selected-icon');
-
-  // Color picker
   buildColorPicker('ev-color-picker', 'ev-selected-color', true);
 
   if (eventId) {
     const ev = state.events.find(e => e.id === eventId);
     if (!ev) return;
-    title.textContent = 'Modifier l\'événement';
+    document.getElementById('event-modal-title').textContent = 'Modifier l\'événement';
     document.getElementById('ev-title').value = ev.title || '';
     document.getElementById('ev-start').value = ev.startDate || '';
     document.getElementById('ev-end').value = ev.endDate || '';
@@ -1295,7 +1553,7 @@ function openEventModal(eventId = null, defaultStreamId = null, defaultDates = n
     selectColor('ev-color-picker', 'ev-selected-color', ev.color || '');
     deleteBtn.style.display = '';
   } else {
-    title.textContent = 'Ajouter un événement';
+    document.getElementById('event-modal-title').textContent = 'Ajouter un événement';
     document.getElementById('ev-title').value = '';
     document.getElementById('ev-note').value = '';
     const today = new Date().toISOString().slice(0,10);
@@ -1323,8 +1581,8 @@ function saveEventModal() {
   const endDate = document.getElementById('ev-end').value;
   if (!startDate || !endDate) return;
   const streamId = document.getElementById('ev-stream').value;
-  const icon = document.getElementById('ev-selected-icon') ? document.getElementById('ev-selected-icon').value : '🎉';
-  const color = document.getElementById('ev-selected-color') ? document.getElementById('ev-selected-color').value : '';
+  const icon = (document.getElementById('ev-selected-icon') || {}).value || '🎉';
+  const color = (document.getElementById('ev-selected-color') || {}).value || '';
   const note = document.getElementById('ev-note').value.trim();
 
   if (editingEventId) {
@@ -1333,18 +1591,15 @@ function saveEventModal() {
   } else {
     state.events.push({ id: genId(), title, startDate, endDate, streamId, icon, color, note });
   }
-  saveState();
-  render();
-  closeEventModal();
+  saveState(); render(); closeEventModal();
 }
 
 function deleteEventFromModal() {
   if (!editingEventId) return;
   if (confirm('Supprimer cet événement ?')) {
     state.events = state.events.filter(e => e.id !== editingEventId);
-    saveState();
-    render();
-    closeEventModal();
+    state.links = state.links.filter(l => l.fromId !== editingEventId && l.toId !== editingEventId);
+    saveState(); render(); closeEventModal();
   }
 }
 
@@ -1357,7 +1612,6 @@ let editingStreamId = null;
 function openStreamModal(streamId = null) {
   editingStreamId = streamId;
   const overlay = document.getElementById('stream-modal-overlay');
-  const title = document.getElementById('stream-modal-title');
   const deleteBtn = document.getElementById('st-delete-btn');
 
   buildIconGrid('st-icon-grid', 'st-selected-icon');
@@ -1366,19 +1620,18 @@ function openStreamModal(streamId = null) {
   if (streamId) {
     const st = state.streams.find(s => s.id === streamId);
     if (!st) return;
-    title.textContent = 'Modifier le stream';
+    document.getElementById('stream-modal-title').textContent = 'Modifier le stream';
     document.getElementById('st-name').value = st.name || '';
     document.getElementById('st-height').value = st.height || 64;
     selectIcon('st-icon-grid', 'st-selected-icon', st.icon || '📋');
     selectColor('st-color-picker', 'st-selected-color', st.color || PRESET_COLORS[4]);
     deleteBtn.style.display = '';
   } else {
-    title.textContent = 'Nouveau stream';
+    document.getElementById('stream-modal-title').textContent = 'Nouveau stream';
     document.getElementById('st-name').value = '';
     document.getElementById('st-height').value = 64;
-    const colors = [PRESET_COLORS[0],PRESET_COLORS[4],PRESET_COLORS[6],PRESET_COLORS[8],PRESET_COLORS[2]];
     const usedColors = state.streams.map(s => s.color);
-    const nextColor = colors.find(c => !usedColors.includes(c)) || PRESET_COLORS[Math.floor(Math.random() * PRESET_COLORS.length)];
+    const nextColor = PRESET_COLORS.find(c => !usedColors.includes(c)) || PRESET_COLORS[Math.floor(Math.random() * PRESET_COLORS.length)];
     selectIcon('st-icon-grid', 'st-selected-icon', '📋');
     selectColor('st-color-picker', 'st-selected-color', nextColor);
     deleteBtn.style.display = 'none';
@@ -1396,8 +1649,8 @@ function closeStreamModal() {
 function saveStreamModal() {
   const name = document.getElementById('st-name').value.trim();
   if (!name) { document.getElementById('st-name').focus(); return; }
-  const icon = document.getElementById('st-selected-icon') ? document.getElementById('st-selected-icon').value : '📋';
-  const color = document.getElementById('st-selected-color') ? document.getElementById('st-selected-color').value : PRESET_COLORS[4];
+  const icon = (document.getElementById('st-selected-icon') || {}).value || '📋';
+  const color = (document.getElementById('st-selected-color') || {}).value || PRESET_COLORS[4];
   const height = parseInt(document.getElementById('st-height').value) || 64;
 
   if (editingStreamId) {
@@ -1406,38 +1659,37 @@ function saveStreamModal() {
   } else {
     state.streams.push({ id: genId(), name, icon, color, height });
   }
-  saveState();
-  render();
-  closeStreamModal();
+  saveState(); render(); closeStreamModal();
 }
 
 function deleteStreamFromModal() {
   if (!editingStreamId) return;
-  const evCount = state.events.filter(e => e.streamId === editingStreamId).length;
+  const evIds = state.events.filter(e => e.streamId === editingStreamId).map(e => e.id);
+  const evCount = evIds.length;
   const msg = evCount > 0
     ? `Supprimer ce stream et ses ${evCount} événement(s) ?`
     : 'Supprimer ce stream ?';
   if (confirm(msg)) {
     state.streams = state.streams.filter(s => s.id !== editingStreamId);
     state.events = state.events.filter(e => e.streamId !== editingStreamId);
-    saveState();
-    render();
-    closeStreamModal();
+    state.links = state.links.filter(l => !evIds.includes(l.fromId) && !evIds.includes(l.toId));
+    saveState(); render(); closeStreamModal();
   }
 }
 
 function confirmDeleteStream(streamId) {
   const st = state.streams.find(s => s.id === streamId);
   if (!st) return;
-  const evCount = state.events.filter(e => e.streamId === streamId).length;
+  const evIds = state.events.filter(e => e.streamId === streamId).map(e => e.id);
+  const evCount = evIds.length;
   const msg = evCount > 0
     ? `Supprimer "${st.name}" et ses ${evCount} événement(s) ?`
     : `Supprimer "${st.name}" ?`;
   if (confirm(msg)) {
     state.streams = state.streams.filter(s => s.id !== streamId);
     state.events = state.events.filter(e => e.streamId !== streamId);
-    saveState();
-    render();
+    state.links = state.links.filter(l => !evIds.includes(l.fromId) && !evIds.includes(l.toId));
+    saveState(); render();
   }
 }
 
@@ -1447,16 +1699,15 @@ function confirmDeleteStream(streamId) {
 
 function buildIconGrid(gridId, hiddenId) {
   const grid = document.getElementById(gridId);
-  // Create hidden input if needed
   let hidden = document.getElementById(hiddenId);
   if (!hidden) {
     hidden = document.createElement('input');
-    hidden.type = 'hidden';
-    hidden.id = hiddenId;
+    hidden.type = 'hidden'; hidden.id = hiddenId;
     document.body.appendChild(hidden);
   }
   grid.innerHTML = ICONS.map(icon =>
-    `<button type="button" class="icon-btn" data-icon="${icon}" onclick="selectIcon('${gridId}','${hiddenId}','${icon}')">${icon}</button>`
+    `<button type="button" class="icon-btn" data-icon="${icon}"
+      onclick="selectIcon('${gridId}','${hiddenId}','${icon}')">${icon}</button>`
   ).join('');
 }
 
@@ -1475,21 +1726,21 @@ function buildColorPicker(pickerId, hiddenId, withNone) {
   let hidden = document.getElementById(hiddenId);
   if (!hidden) {
     hidden = document.createElement('input');
-    hidden.type = 'hidden';
-    hidden.id = hiddenId;
+    hidden.type = 'hidden'; hidden.id = hiddenId;
     document.body.appendChild(hidden);
   }
-
   let html = '';
   if (withNone) {
-    html += `<div class="color-swatch" data-color="" style="background: linear-gradient(135deg, #fff 45%, #ccc 45%); border: 2px solid #d1d5db;" title="Couleur du stream" onclick="selectColor('${pickerId}','${hiddenId}','')"></div>`;
+    html += `<div class="color-swatch" data-color=""
+      style="background:linear-gradient(135deg,#fff 45%,#ccc 45%);border:2px solid #d1d5db;"
+      title="Couleur du stream" onclick="selectColor('${pickerId}','${hiddenId}','')"></div>`;
   }
   html += PRESET_COLORS.map(c =>
-    `<div class="color-swatch" data-color="${c}" style="background:${c}" onclick="selectColor('${pickerId}','${hiddenId}','${c}')"></div>`
+    `<div class="color-swatch" data-color="${c}" style="background:${c}"
+      onclick="selectColor('${pickerId}','${hiddenId}','${c}')"></div>`
   ).join('');
-  html += `<input type="color" class="color-custom-input" value="#3b82f6" title="Couleur personnalisée"
-    oninput="selectColor('${pickerId}','${hiddenId}',this.value)" />`;
-
+  html += `<input type="color" class="color-custom-input" value="#3b82f6"
+    title="Couleur personnalisée" oninput="selectColor('${pickerId}','${hiddenId}',this.value)"/>`;
   picker.innerHTML = html;
 }
 
@@ -1508,23 +1759,35 @@ function selectColor(pickerId, hiddenId, color) {
 // ═══════════════════════════════════════════════
 
 document.addEventListener('keydown', e => {
-  // Close modals with Escape
+  const inField = e.target.matches('input,textarea,select');
+
   if (e.key === 'Escape') {
-    closeEventModal();
-    closeStreamModal();
-    closeContextMenu();
-  }
-  // Save with Ctrl/Cmd+Enter in modal
-  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
     if (document.getElementById('event-modal-overlay').classList.contains('active')) {
-      saveEventModal();
+      closeEventModal();
     } else if (document.getElementById('stream-modal-overlay').classList.contains('active')) {
-      saveStreamModal();
+      closeStreamModal();
+    } else if (ui.linkMode && ui.linkSource) {
+      cancelLinkSource();
+    } else if (ui.linkMode) {
+      toggleLinkMode();
     }
+    closeContextMenu();
+    return;
+  }
+
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    if (document.getElementById('event-modal-overlay').classList.contains('active')) saveEventModal();
+    else if (document.getElementById('stream-modal-overlay').classList.contains('active')) saveStreamModal();
+    return;
+  }
+
+  if (!inField && !e.ctrlKey && !e.metaKey) {
+    if (e.key === 'l' || e.key === 'L') toggleLinkMode();
+    if (e.key === 'k' || e.key === 'K') toggleCriticalPath();
   }
 });
 
-// Close modal on overlay click
+// Close modals on overlay click
 document.getElementById('event-modal-overlay').addEventListener('click', function(e) {
   if (e.target === this) closeEventModal();
 });
@@ -1537,7 +1800,7 @@ document.getElementById('stream-modal-overlay').addEventListener('click', functi
 // ═══════════════════════════════════════════════
 
 function exportPNG() {
-  alert('Pour exporter en image:\n1. Utilisez Ctrl+P (imprimer) → "Enregistrer en PDF"\n2. Ou faites une capture d\'écran (Ctrl+Shift+S sur Windows/Linux, Cmd+Shift+4 sur Mac)\n\nPour un export Excel, vous pouvez copier-coller les données dans un tableau.');
+  alert('Pour exporter:\n• Ctrl+P → "Enregistrer en PDF"\n• Ou capture d\'écran (Ctrl+Shift+S)');
 }
 
 // ═══════════════════════════════════════════════
@@ -1547,9 +1810,7 @@ function exportPNG() {
 let resizeTimeout;
 window.addEventListener('resize', () => {
   clearTimeout(resizeTimeout);
-  resizeTimeout = setTimeout(() => {
-    if (state.dayWidth === 0) render(); // re-render only if auto zoom
-  }, 150);
+  resizeTimeout = setTimeout(() => { if (state.dayWidth === 0) render(); }, 150);
 });
 
 // ═══════════════════════════════════════════════
@@ -1559,43 +1820,45 @@ window.addEventListener('resize', () => {
 loadState();
 
 if (state.streams.length === 0) {
-  // Default streams
-  const s1id = genId();
-  const s2id = genId();
-  const s3id = genId();
+  const s1 = genId(), s2 = genId(), s3 = genId();
   state.streams = [
-    { id: s1id, name: 'Événements', icon: '🎉', color: '#10b981', height: 64 },
-    { id: s2id, name: 'Salons',     icon: '🏪', color: '#3b82f6', height: 64 },
-    { id: s3id, name: 'Réunions',   icon: '👥', color: '#f59e0b', height: 64 },
+    { id: s1, name: 'Événements', icon: '🎉', color: '#10b981', height: 64 },
+    { id: s2, name: 'Salons',     icon: '🏪', color: '#3b82f6', height: 64 },
+    { id: s3, name: 'Réunions',   icon: '👥', color: '#f59e0b', height: 64 },
   ];
   const yr = state.year;
+  const e1=genId(), e2=genId(), e3=genId(), e4=genId(), e5=genId(), e6=genId(), e7=genId(), e8=genId();
   state.events = [
-    { id: genId(), streamId: s1id, title: 'Lancement produit', icon: '🚀', startDate: `${yr}-01-15`, endDate: `${yr}-01-18`, color: '', note: '' },
-    { id: genId(), streamId: s1id, title: 'Conférence annuelle', icon: '🎤', startDate: `${yr}-03-10`, endDate: `${yr}-03-12`, color: '', note: '' },
-    { id: genId(), streamId: s1id, title: 'Journée portes ouvertes', icon: '🏢', startDate: `${yr}-06-20`, endDate: `${yr}-06-20`, color: '', note: '' },
-    { id: genId(), streamId: s1id, title: 'Soirée clients', icon: '🎊', startDate: `${yr}-11-15`, endDate: `${yr}-11-15`, color: '', note: '' },
-    { id: genId(), streamId: s2id, title: 'CES', icon: '💻', startDate: `${yr}-01-07`, endDate: `${yr}-01-10`, color: '', note: '' },
-    { id: genId(), streamId: s2id, title: 'Salon du Bourget', icon: '✈️', startDate: `${yr}-06-15`, endDate: `${yr}-06-22`, color: '', note: '' },
-    { id: genId(), streamId: s2id, title: 'Paris Retail Week', icon: '🛒', startDate: `${yr}-09-16`, endDate: `${yr}-09-18`, color: '', note: '' },
-    { id: genId(), streamId: s3id, title: 'COMEX Q1', icon: '📊', startDate: `${yr}-01-20`, endDate: `${yr}-01-20`, color: '', note: '' },
-    { id: genId(), streamId: s3id, title: 'COMEX Q2', icon: '📊', startDate: `${yr}-04-15`, endDate: `${yr}-04-15`, color: '', note: '' },
-    { id: genId(), streamId: s3id, title: 'COMEX Q3', icon: '📊', startDate: `${yr}-07-14`, endDate: `${yr}-07-14`, color: '', note: '' },
-    { id: genId(), streamId: s3id, title: 'COMEX Q4', icon: `📊`, startDate: `${yr}-10-13`, endDate: `${yr}-10-13`, color: '', note: '' },
-    { id: genId(), streamId: s3id, title: 'Séminaire direction', icon: '🏆', startDate: `${yr}-05-06`, endDate: `${yr}-05-08`, color: '', note: '' },
+    { id: e1, streamId: s1, title: 'Lancement produit', icon: '🚀', startDate: `${yr}-01-15`, endDate: `${yr}-01-18`, color: '', note: '' },
+    { id: e2, streamId: s1, title: 'Conférence annuelle', icon: '🎤', startDate: `${yr}-03-10`, endDate: `${yr}-03-12`, color: '', note: '' },
+    { id: e3, streamId: s1, title: 'Journée portes ouvertes', icon: '🏢', startDate: `${yr}-06-20`, endDate: `${yr}-06-20`, color: '', note: '' },
+    { id: e4, streamId: s1, title: 'Soirée clients', icon: '🎊', startDate: `${yr}-11-15`, endDate: `${yr}-11-15`, color: '', note: '' },
+    { id: e5, streamId: s2, title: 'CES', icon: '💻', startDate: `${yr}-01-07`, endDate: `${yr}-01-10`, color: '', note: '' },
+    { id: e6, streamId: s2, title: 'Salon du Bourget', icon: '✈️', startDate: `${yr}-06-15`, endDate: `${yr}-06-22`, color: '', note: '' },
+    { id: e7, streamId: s2, title: 'Paris Retail Week', icon: '🛒', startDate: `${yr}-09-16`, endDate: `${yr}-09-18`, color: '', note: '' },
+    { id: e8, streamId: s3, title: 'COMEX Q1', icon: '📊', startDate: `${yr}-01-20`, endDate: `${yr}-01-20`, color: '', note: '' },
+    { id: genId(), streamId: s3, title: 'COMEX Q2', icon: '📊', startDate: `${yr}-04-15`, endDate: `${yr}-04-15`, color: '', note: '' },
+    { id: genId(), streamId: s3, title: 'COMEX Q3', icon: '📊', startDate: `${yr}-07-14`, endDate: `${yr}-07-14`, color: '', note: '' },
+    { id: genId(), streamId: s3, title: 'COMEX Q4', icon: '📊', startDate: `${yr}-10-13`, endDate: `${yr}-10-13`, color: '', note: '' },
+    { id: genId(), streamId: s3, title: 'Séminaire direction', icon: '🏆', startDate: `${yr}-05-06`, endDate: `${yr}-05-08`, color: '', note: '' },
+  ];
+  // Demo links: Lancement → Conférence → Portes ouvertes → Soirée clients
+  state.links = [
+    { id: genId(), fromId: e1, toId: e2 },
+    { id: genId(), fromId: e2, toId: e3 },
+    { id: genId(), fromId: e3, toId: e4 },
   ];
   saveState();
 }
 
 render();
 
-// Scroll to today on load
+// Scroll to today
 const todayDay = todayDayOfYear(state.year);
 if (todayDay >= 0) {
   setTimeout(() => {
     const mainEl = document.getElementById('main-scroll');
-    const dw = getEffectiveDayWidth();
-    const scrollTo = Math.max(0, dayToX(todayDay) + 200 - mainEl.clientWidth / 2);
-    mainEl.scrollLeft = scrollTo;
+    mainEl.scrollLeft = Math.max(0, dayToX(todayDay) + 200 - mainEl.clientWidth / 2);
   }, 100);
 }
 </script>
