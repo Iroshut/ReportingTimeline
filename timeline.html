@@ -195,32 +195,38 @@ body.link-mode .event-block:hover {
   pointer-events: none;
 }
 
-/* ── Today marker ── */
+/* ── Today marker (ligne seule dans les streams) ── */
 .today-marker {
   position: absolute; top: 0; bottom: 0;
   width: 2px; background: #ef4444;
   z-index: 10; pointer-events: none;
 }
-.today-marker::before {
-  content: 'Aujourd\'hui';
-  position: absolute; top: -20px;
+
+/* ── Today marker dans le header (avec label) ── */
+.today-header-marker {
+  position: absolute; top: 0; bottom: 0;
+  width: 2px; background: #ef4444;
+  pointer-events: none; z-index: 5;
+}
+.today-header-label {
+  position: absolute; bottom: 3px;
   left: 50%; transform: translateX(-50%);
-  font-size: 9px; color: #ef4444; font-weight: 700;
-  white-space: nowrap; background: white;
-  padding: 1px 4px; border-radius: 3px;
-  border: 1px solid #fca5a5;
+  font-size: 9px; color: white; font-weight: 700;
+  white-space: nowrap; background: #ef4444;
+  padding: 1px 5px; border-radius: 3px;
 }
 
 /* ── Event block ── */
 .event-block {
   position: absolute; height: 40px; top: 12px;
   border-radius: 8px; cursor: grab;
-  display: flex; align-items: center;
-  padding: 0 10px; gap: 5px;
+  display: flex; flex-direction: column;
+  align-items: flex-start; justify-content: center;
+  padding: 3px 8px; gap: 1px;
   user-select: none; overflow: hidden;
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
   transition: box-shadow 0.1s, transform 0.05s;
-  z-index: 5; min-width: 24px; white-space: nowrap;
+  z-index: 5; min-width: 24px;
 }
 .event-block:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.25); z-index: 10; }
 .event-block.dragging {
@@ -229,8 +235,10 @@ body.link-mode .event-block:hover {
   opacity: 0.9; z-index: 100; transform: scale(1.02);
 }
 .event-block.resizing { cursor: ew-resize; }
-.event-icon { font-size: 14px; flex-shrink: 0; }
-.event-title { font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.event-block-top { display: flex; align-items: center; gap: 4px; width: 100%; overflow: hidden; flex-shrink: 0; }
+.event-icon { font-size: 13px; flex-shrink: 0; }
+.event-title { font-size: 11px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.event-date-label { font-size: 9px; opacity: 0.82; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; max-width: 100%; }
 .resize-handle {
   position: absolute; right: 0; top: 0; bottom: 0;
   width: 8px; cursor: ew-resize;
@@ -239,6 +247,14 @@ body.link-mode .event-block:hover {
   opacity: 0; transition: opacity 0.15s; z-index: 2;
 }
 .event-block:hover .resize-handle { opacity: 1; }
+
+/* ── Stream resize handle ── */
+.stream-resize-handle {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 5px; cursor: ns-resize; z-index: 35;
+  background: transparent;
+}
+.stream-resize-handle:hover { background: rgba(0,0,0,0.1); }
 
 /* ── Add stream row ── */
 .add-stream-row {
@@ -874,12 +890,16 @@ function render() {
   // ── Header row ──
   html += `<div class="header-row">`;
   html += `<div class="header-sidebar">STREAMS</div>`;
-  html += `<div class="months-header" style="width:${tw}px">`;
+  html += `<div class="months-header" style="width:${tw}px;position:relative;">`;
   for (let m = 0; m < 12; m++) {
     const mDays = daysInMonth(state.year, m);
     const mWidth = mDays * dw;
     const label = dw >= 6 ? MONTHS_FR[m] : (dw >= 3 ? MONTHS_SHORT[m] : '');
     html += `<div class="month-cell" style="width:${mWidth}px;flex-shrink:0;" title="${MONTHS_FR[m]}">${label}</div>`;
+  }
+  const todayDayH = todayDayOfYear(state.year);
+  if (todayDayH >= 0) {
+    html += `<div class="today-header-marker" style="left:${dayToX(todayDayH)}px"><span class="today-header-label">Aujourd'hui</span></div>`;
   }
   html += `</div></div>`;
 
@@ -896,10 +916,13 @@ function render() {
     const sh = stream.height || 64;
     const streamEvents = state.events.filter(e => e.streamId === stream.id);
 
-    html += `<div class="stream-row" data-stream-id="${stream.id}" style="min-height:${sh}px">`;
+    const bgTrack = hexToRgba(stream.color, 0.07);
+    const bgSidebar = hexToRgba(stream.color, 0.12);
+
+    html += `<div class="stream-row" data-stream-id="${stream.id}" style="min-height:${sh}px;position:relative;">`;
 
     // Sidebar
-    html += `<div class="stream-sidebar" style="min-height:${sh}px">
+    html += `<div class="stream-sidebar" style="min-height:${sh}px;background:${bgSidebar};border-left:3px solid ${stream.color};">
       <div class="stream-color-dot" style="background:${stream.color}"></div>
       <span class="stream-icon">${stream.icon || '📋'}</span>
       <span class="stream-name" title="${esc(stream.name)}">${esc(stream.name)}</span>
@@ -911,7 +934,7 @@ function render() {
 
     // Track
     html += `<div class="stream-track" id="track-${stream.id}" data-stream-id="${stream.id}"
-      style="width:${tw}px;min-height:${sh}px"
+      style="width:${tw}px;min-height:${sh}px;background:${bgTrack};"
       onclick="trackClick(event,'${stream.id}')"
       ondblclick="trackDblClick(event,'${stream.id}')">`;
     html += `<div class="stream-track-inner" style="height:${sh}px">`;
@@ -951,6 +974,9 @@ function render() {
       const isSource = ui.linkMode && ui.linkSource === ev.id;
       const extraClass = [isCritical ? 'critical' : '', isSource ? 'link-source' : ''].filter(Boolean).join(' ');
 
+      const showDate = widthPx > 50;
+      const startLabel = formatDateShort(ev.startDate);
+
       html += `<div class="event-block ${extraClass}"
         data-event-id="${ev.id}"
         style="left:${leftPx}px;width:${widthPx}px;background:${evColor};color:${textColor};"
@@ -960,13 +986,17 @@ function render() {
         oncontextmenu="openContextMenu(event,'${ev.id}')"
         onmouseenter="showTooltip(event,'${ev.id}')"
         onmouseleave="hideTooltip()">
-        ${showIcon ? `<span class="event-icon">${ev.icon||'📌'}</span>` : ''}
-        ${showTitle ? `<span class="event-title">${esc(ev.title)}</span>` : ''}
+        <div class="event-block-top">
+          ${showTitle ? `<span class="event-title">${esc(ev.title)}</span>` : ''}
+        </div>
+        ${showDate ? `<span class="event-date-label">${startLabel}</span>` : ''}
         <div class="resize-handle" onmousedown="startEventResize(event,'${ev.id}')"></div>
       </div>`;
     }
 
-    html += `</div></div></div>`; // track-inner, stream-track, stream-row
+    html += `</div></div>`; // track-inner, stream-track
+    html += `<div class="stream-resize-handle" onmousedown="startStreamResize(event,'${stream.id}')"></div>`;
+    html += `</div>`; // stream-row
   }
 
   // Add stream button
@@ -1003,6 +1033,15 @@ function luminance(hex) {
   const b=parseInt(hex.slice(4,6),16)/255;
   const toL = c => c<=0.04045 ? c/12.92 : Math.pow((c+0.055)/1.055,2.4);
   return 0.2126*toL(r)+0.7152*toL(g)+0.0722*toL(b);
+}
+
+function hexToRgba(hex, alpha) {
+  hex = hex.replace('#','');
+  if (hex.length === 3) hex = hex.split('').map(c=>c+c).join('');
+  const r=parseInt(hex.slice(0,2),16);
+  const g=parseInt(hex.slice(2,4),16);
+  const b=parseInt(hex.slice(4,6),16);
+  return `rgba(${r},${g},${b},${alpha})`;
 }
 
 // ═══════════════════════════════════════════════
@@ -1352,6 +1391,19 @@ document.addEventListener('click', e => {
 // ═══════════════════════════════════════════════
 
 let dragState = null;
+let streamResizeState = null;
+
+function startStreamResize(e, streamId) {
+  e.stopPropagation(); e.preventDefault();
+  const st = state.streams.find(s => s.id === streamId);
+  if (!st) return;
+  streamResizeState = {
+    streamId,
+    startY: e.clientY,
+    origHeight: st.height || 64,
+  };
+  document.body.style.cursor = 'ns-resize';
+}
 
 function startEventDrag(e, eventId) {
   if (ui.linkMode) return;
@@ -1414,6 +1466,25 @@ document.addEventListener('mousemove', e => {
     updateGhostPath(e.clientX, e.clientY);
   }
 
+  // Stream height resize
+  if (streamResizeState) {
+    const delta = e.clientY - streamResizeState.startY;
+    const newH = Math.max(32, Math.min(300, streamResizeState.origHeight + delta));
+    streamResizeState.currentHeight = newH;
+    // Live DOM update (no full re-render)
+    const rowEl = document.querySelector(`.stream-row[data-stream-id="${streamResizeState.streamId}"]`);
+    if (rowEl) {
+      rowEl.style.minHeight = newH + 'px';
+      const sidebarEl = rowEl.querySelector('.stream-sidebar');
+      if (sidebarEl) sidebarEl.style.minHeight = newH + 'px';
+      const trackEl = rowEl.querySelector('.stream-track');
+      if (trackEl) { trackEl.style.minHeight = newH + 'px'; }
+      const innerEl = rowEl.querySelector('.stream-track-inner');
+      if (innerEl) innerEl.style.height = newH + 'px';
+    }
+    return;
+  }
+
   if (!dragState) return;
   const mainEl = document.getElementById('main-scroll');
   const dw = dragState.dw;
@@ -1472,6 +1543,17 @@ document.addEventListener('mousemove', e => {
 });
 
 document.addEventListener('mouseup', () => {
+  if (streamResizeState) {
+    const st = state.streams.find(s => s.id === streamResizeState.streamId);
+    if (st && streamResizeState.currentHeight !== undefined) {
+      st.height = Math.max(32, Math.min(300, Math.round(streamResizeState.currentHeight / 4) * 4));
+    }
+    document.body.style.cursor = '';
+    streamResizeState = null;
+    saveState(); render();
+    return;
+  }
+
   if (!dragState) return;
   const days = daysInYear(state.year);
   const ev = state.events.find(x => x.id === dragState.eventId);
