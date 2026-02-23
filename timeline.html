@@ -126,7 +126,7 @@ body.link-mode .event-block:hover {
   background: #f0f2f5;
 }
 .header-sidebar {
-  width: 200px; min-width: 200px;
+  width: var(--sidebar-w, 200px); min-width: var(--sidebar-w, 200px);
   flex-shrink: 0;
   position: sticky; left: 0; z-index: 60;
   background: #1e293b;
@@ -136,6 +136,7 @@ body.link-mode .event-block:hover {
   font-size: 11px; font-weight: 600;
   letter-spacing: 0.5px; text-transform: uppercase;
   border-right: 1px solid rgba(255,255,255,0.1);
+  position: sticky; left: 0;
 }
 .months-header { display: flex; background: #1e293b; border-bottom: 2px solid #334155; }
 .month-cell {
@@ -155,7 +156,7 @@ body.link-mode .event-block:hover {
 
 /* ── Stream sidebar cell ── */
 .stream-sidebar {
-  width: 200px; min-width: 200px;
+  width: var(--sidebar-w, 200px); min-width: var(--sidebar-w, 200px);
   flex-shrink: 0;
   position: sticky; left: 0; z-index: 30;
   background: white;
@@ -260,8 +261,17 @@ body.link-mode .event-block:hover {
 .add-stream-row {
   display: flex; padding: 8px; background: white;
   border-top: 2px dashed #e2e8f0;
-  position: sticky; left: 0; width: 200px;
+  position: sticky; left: 0; width: var(--sidebar-w, 200px);
 }
+
+/* ── Sidebar resize handle ── */
+.sidebar-resize-handle {
+  position: absolute; right: 0; top: 0; bottom: 0;
+  width: 5px; cursor: ew-resize; z-index: 65;
+  background: transparent;
+}
+.sidebar-resize-handle:hover { background: rgba(255,255,255,0.25); }
+body.sidebar-resizing { cursor: ew-resize !important; user-select: none; }
 .add-stream-row button {
   width: 100%; background: none; border: none;
   cursor: pointer; color: #64748b; font-size: 13px;
@@ -638,6 +648,7 @@ const MONTHS_SHORT = ['Jan','Fév','Mar','Avr','Mai','Jun',
 let state = {
   year: new Date().getFullYear(),
   dayWidth: 0,
+  sidebarWidth: 200,
   streams: [],
   events: [],
   links: [],     // { id, fromId, toId }
@@ -657,6 +668,12 @@ let _headerH = 36; // cached header height after each render
 
 function genId() { return 'id_' + (state._nextId++); }
 
+function getSidebarWidth() { return state.sidebarWidth || 200; }
+
+function applySidebarWidth() {
+  document.documentElement.style.setProperty('--sidebar-w', getSidebarWidth() + 'px');
+}
+
 function loadState() {
   try {
     const saved = localStorage.getItem('timeline_state_v2');
@@ -664,6 +681,7 @@ function loadState() {
       const parsed = JSON.parse(saved);
       state = { ...state, ...parsed };
       if (!state.links) state.links = [];
+      if (!state.sidebarWidth) state.sidebarWidth = 200;
     }
   } catch(e) {}
 }
@@ -714,7 +732,7 @@ function todayDayOfYear(year) {
 function getEffectiveDayWidth() {
   if (state.dayWidth > 0) return state.dayWidth;
   const mainEl = document.getElementById('main-scroll');
-  const available = (mainEl ? mainEl.clientWidth : window.innerWidth) - 200 - 16;
+  const available = (mainEl ? mainEl.clientWidth : window.innerWidth) - getSidebarWidth() - 16;
   return Math.max(4, Math.floor(available / daysInYear(state.year)));
 }
 
@@ -745,12 +763,12 @@ function eventRightX(ev) {
   const days = daysInYear(state.year);
   const endDay = Math.min(days - 1, dayOfYear(ev.endDate, state.year));
   const dw = getEffectiveDayWidth();
-  return Math.max(dw, (endDay + 1)) * dw + 200;
+  return Math.max(dw, (endDay + 1)) * dw + getSidebarWidth();
 }
 
 function eventLeftX(ev) {
   const startDay = Math.max(0, dayOfYear(ev.startDate, state.year));
-  return startDay * getEffectiveDayWidth() + 200;
+  return startDay * getEffectiveDayWidth() + getSidebarWidth();
 }
 
 function bezierD(x1, y1, x2, y2) {
@@ -873,6 +891,7 @@ function wouldCreateCycle(fromId, toId) {
 // ═══════════════════════════════════════════════
 
 function render() {
+  applySidebarWidth();
   document.getElementById('year-display').textContent = state.year;
   const wrapper = document.getElementById('timeline-wrapper');
   const dw = getEffectiveDayWidth();
@@ -889,7 +908,7 @@ function render() {
 
   // ── Header row ──
   html += `<div class="header-row">`;
-  html += `<div class="header-sidebar">STREAMS</div>`;
+  html += `<div class="header-sidebar" style="position:sticky;left:0;">STREAMS<div class="sidebar-resize-handle" onmousedown="startSidebarResize(event)"></div></div>`;
   html += `<div class="months-header" style="width:${tw}px;position:relative;">`;
   for (let m = 0; m < 12; m++) {
     const mDays = daysInMonth(state.year, m);
@@ -1057,7 +1076,7 @@ function renderLinks() {
   const wrapper = document.getElementById('timeline-wrapper');
   if (!wrapper) return;
 
-  const tw = totalWidth() + 200;
+  const tw = totalWidth() + getSidebarWidth();
   const th = wrapper.scrollHeight || wrapper.offsetHeight || 500;
 
   const ns = 'http://www.w3.org/2000/svg';
@@ -1387,6 +1406,21 @@ document.addEventListener('click', e => {
 });
 
 // ═══════════════════════════════════════════════
+// SIDEBAR RESIZE
+// ═══════════════════════════════════════════════
+
+let sidebarResizeState = null;
+
+function startSidebarResize(e) {
+  e.stopPropagation(); e.preventDefault();
+  sidebarResizeState = {
+    startX: e.clientX,
+    origWidth: getSidebarWidth(),
+  };
+  document.body.classList.add('sidebar-resizing');
+}
+
+// ═══════════════════════════════════════════════
 // DRAG & DROP
 // ═══════════════════════════════════════════════
 
@@ -1466,6 +1500,15 @@ document.addEventListener('mousemove', e => {
     updateGhostPath(e.clientX, e.clientY);
   }
 
+  // Sidebar width resize
+  if (sidebarResizeState) {
+    const delta = e.clientX - sidebarResizeState.startX;
+    const newW = Math.max(120, Math.min(400, sidebarResizeState.origWidth + delta));
+    state.sidebarWidth = newW;
+    applySidebarWidth();
+    return;
+  }
+
   // Stream height resize
   if (streamResizeState) {
     const delta = e.clientY - streamResizeState.startY;
@@ -1543,6 +1586,13 @@ document.addEventListener('mousemove', e => {
 });
 
 document.addEventListener('mouseup', () => {
+  if (sidebarResizeState) {
+    document.body.classList.remove('sidebar-resizing');
+    sidebarResizeState = null;
+    saveState(); render();
+    return;
+  }
+
   if (streamResizeState) {
     const st = state.streams.find(s => s.id === streamResizeState.streamId);
     if (st && streamResizeState.currentHeight !== undefined) {
@@ -1900,6 +1950,7 @@ window.addEventListener('resize', () => {
 // ═══════════════════════════════════════════════
 
 loadState();
+applySidebarWidth();
 
 if (state.streams.length === 0) {
   const s1 = genId(), s2 = genId(), s3 = genId();
@@ -1940,7 +1991,7 @@ const todayDay = todayDayOfYear(state.year);
 if (todayDay >= 0) {
   setTimeout(() => {
     const mainEl = document.getElementById('main-scroll');
-    mainEl.scrollLeft = Math.max(0, dayToX(todayDay) + 200 - mainEl.clientWidth / 2);
+    mainEl.scrollLeft = Math.max(0, dayToX(todayDay) + getSidebarWidth() - mainEl.clientWidth / 2);
   }, 100);
 }
 </script>
