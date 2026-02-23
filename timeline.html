@@ -498,6 +498,13 @@ body.sidebar-resizing { cursor: ew-resize !important; user-select: none; }
   <div class="toolbar-divider"></div>
 
   <button class="btn-add-stream" onclick="openStreamModal()">+ Stream</button>
+
+  <div class="toolbar-divider"></div>
+
+  <button class="btn-toolbar" onclick="saveToFile()" title="Sauvegarder l'état dans un fichier JSON">💾 Sauvegarder</button>
+  <button class="btn-toolbar" onclick="document.getElementById('file-open-input').click()" title="Ouvrir un fichier JSON sauvegardé">📂 Ouvrir</button>
+  <input type="file" id="file-open-input" accept=".json" style="display:none" onchange="loadFromFile(event)">
+
   <button class="btn-toolbar" onclick="exportPNG()">📷 Export</button>
 </div>
 
@@ -941,7 +948,8 @@ function render() {
     html += `<div class="stream-row" data-stream-id="${stream.id}" style="min-height:${sh}px;position:relative;">`;
 
     // Sidebar
-    html += `<div class="stream-sidebar" style="min-height:${sh}px;background:${bgSidebar};border-left:3px solid ${stream.color};">
+    html += `<div class="stream-sidebar" style="min-height:${sh}px;background:${bgSidebar};border-left:3px solid ${stream.color};"
+      ondblclick="openStreamModal('${stream.id}')" title="Double-cliquer pour modifier">
       <div class="stream-color-dot" style="background:${stream.color}"></div>
       <span class="stream-icon">${stream.icon || '📋'}</span>
       <span class="stream-name" title="${esc(stream.name)}">${esc(stream.name)}</span>
@@ -1926,6 +1934,55 @@ document.getElementById('event-modal-overlay').addEventListener('click', functio
 document.getElementById('stream-modal-overlay').addEventListener('click', function(e) {
   if (e.target === this) closeStreamModal();
 });
+
+// ═══════════════════════════════════════════════
+// SAVE / LOAD FILE
+// ═══════════════════════════════════════════════
+
+function saveToFile() {
+  const filename = `timeline_${state.year}_${new Date().toISOString().slice(0,10)}.json`;
+  const json = JSON.stringify(state, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function loadFromFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const parsed = JSON.parse(ev.target.result);
+      if (!parsed.streams || !parsed.events) {
+        alert('Fichier invalide : structure inattendue.');
+        return;
+      }
+      state = {
+        year: new Date().getFullYear(),
+        dayWidth: 0,
+        sidebarWidth: 200,
+        streams: [],
+        events: [],
+        links: [],
+        _nextId: 1,
+        ...parsed,
+      };
+      if (!state.links) state.links = [];
+      if (!state.sidebarWidth) state.sidebarWidth = 200;
+      saveState();
+      render();
+    } catch(err) {
+      alert('Erreur lors de l\'ouverture du fichier.');
+    }
+  };
+  reader.readAsText(file);
+  // Reset input so the same file can be reopened
+  e.target.value = '';
+}
 
 // ═══════════════════════════════════════════════
 // EXPORT
